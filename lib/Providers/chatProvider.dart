@@ -60,9 +60,9 @@ class ChatProvider with ChangeNotifier {
         .get();
 
     _messages.clear();
-    _messages.addAll(snapshot.docs
-        .map((doc) => ChatMessage.fromMap(doc.data()))
-        .toList());
+    _messages.addAll(
+      snapshot.docs.map((doc) => ChatMessage.fromMap(doc.data())).toList(),
+    );
     notifyListeners();
   }
 
@@ -88,10 +88,7 @@ class ChatProvider with ChangeNotifier {
     try {
       // 2. Prepare context (last 10 messages)
       final context = _messages.takeLast(10).map((m) {
-        return {
-          "role": m.isUser ? "user" : "assistant",
-          "text": m.text,
-        };
+        return {"role": m.isUser ? "user" : "assistant", "text": m.text};
       }).toList();
 
       // 3. Get AI reply
@@ -130,6 +127,5 @@ class ChatProvider with ChangeNotifier {
 }
 
 extension TakeLast<T> on List<T> {
-  Iterable<T> takeLast(int n) =>
-      skip(length - (length < n ? length : n));
+  Iterable<T> takeLast(int n) => skip(length - (length < n ? length : n));
 }

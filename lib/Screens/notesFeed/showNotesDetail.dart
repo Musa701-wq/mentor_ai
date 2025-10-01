@@ -19,6 +19,7 @@ class NoteDetailScreen extends StatefulWidget {
 
 class _NoteDetailScreenState extends State<NoteDetailScreen> {
   late TextEditingController _contentController;
+  late TextEditingController _titleController;
   String? _editedSummary;
   bool _isEditing = false;
   bool _isSaving = false;
@@ -30,12 +31,14 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
     super.initState();
     _currentNote = widget.note;
     _contentController = TextEditingController(text: _currentNote.content);
+    _titleController = TextEditingController(text: _currentNote.title);
     _editedSummary = _currentNote.summary;
   }
 
   @override
   void dispose() {
     _contentController.dispose();
+    _titleController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -93,6 +96,7 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                   if (_isEditing) {
                     setState(() => _isSaving = true);
                     final updated = _currentNote.copyWith(
+                      title: _titleController.text.trim(),
                       content: _contentController.text.trim(),
                       summary: _editedSummary,
                     );
@@ -149,15 +153,53 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Title
-                      Text(
-                        _currentNote.title,
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                          color: textColor,
-                          height: 1.3,
-                        ),
-                      ),
+                      _isEditing
+                          ? Container(
+                              decoration: BoxDecoration(
+                                color: cardColor,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: isDark
+                                    ? null
+                                    : [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: TextField(
+                                  controller: _titleController,
+                                  style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w800,
+                                    color: textColor,
+                                    height: 1.3,
+                                  ),
+                                  decoration: InputDecoration(
+                                    border: InputBorder.none,
+                                    hintText: 'Enter note title...',
+                                    hintStyle: TextStyle(
+                                      color: secondaryTextColor,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  maxLines: null,
+                                ),
+                              ),
+                            )
+                          : Text(
+                              _titleController.text,
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                                color: textColor,
+                                height: 1.3,
+                              ),
+                            ),
                       const SizedBox(height: 16),
 
                       // Tags

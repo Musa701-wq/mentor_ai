@@ -88,7 +88,7 @@ class SignInPage extends StatelessWidget {
 
                   // Welcome Text
                   const Text(
-                    'Welcome to Student AI',
+                    'Welcome to Mentor AI',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
@@ -143,7 +143,7 @@ class SignInPage extends StatelessWidget {
                           color: Colors.white,
                           textColor: Colors.grey[800],
                           icon: FontAwesomeIcons.google,
-                          iconColor: Colors.red,
+                          iconColor: Colors.black,
                           onPressed: () => _handleLogin(authProvider.signInWithGoogle),
                         ),
 

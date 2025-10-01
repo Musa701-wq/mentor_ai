@@ -38,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _showTooltip = true;
   bool _isProUser = false;
   StreamSubscription? _proSubscription;
+  int _notesKey = 0;
 
   @override
   void initState() {
@@ -109,7 +110,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         animation: _fadeAnimation,
         isProUser: _isProUser,
       ),
-      NotesFeedScreen(),
+      NotesFeedScreen(key: ValueKey(_notesKey)),
       QuizListScreen(),
       PlanFeedScreen(),
       ProfileScreen(uid: FirebaseAuth.instance.currentUser!.uid),
@@ -151,34 +152,60 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             elevation: 0,
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) {
-              setState(() => _selectedIndex = index);
+              setState(
+                () => {
+                  _selectedIndex = index,
+                  if (index == 1)
+                    {_notesKey = DateTime.now().millisecondsSinceEpoch},
+                },
+              );
             },
             indicatorColor: Colors.blueAccent.withOpacity(0.15),
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             destinations: [
               NavigationDestination(
                 icon: Icon(Icons.home_outlined, size: iconSize),
-                selectedIcon: Icon(Icons.home, size: iconSize, color: Colors.blueAccent),
+                selectedIcon: Icon(
+                  Icons.home,
+                  size: iconSize,
+                  color: Colors.blueAccent,
+                ),
                 label: 'Home',
               ),
               NavigationDestination(
                 icon: Icon(Icons.note_outlined, size: iconSize),
-                selectedIcon: Icon(Icons.note, size: iconSize, color: Colors.blueAccent),
+                selectedIcon: Icon(
+                  Icons.note,
+                  size: iconSize,
+                  color: Colors.blueAccent,
+                ),
                 label: 'Notes',
               ),
               NavigationDestination(
                 icon: Icon(Icons.quiz_outlined, size: iconSize),
-                selectedIcon: Icon(Icons.quiz, size: iconSize, color: Colors.blueAccent),
+                selectedIcon: Icon(
+                  Icons.quiz,
+                  size: iconSize,
+                  color: Colors.blueAccent,
+                ),
                 label: 'Quiz',
               ),
               NavigationDestination(
                 icon: Icon(Icons.queue_play_next_outlined, size: iconSize),
-                selectedIcon: Icon(Icons.queue_play_next, size: iconSize, color: Colors.blueAccent),
+                selectedIcon: Icon(
+                  Icons.queue_play_next,
+                  size: iconSize,
+                  color: Colors.blueAccent,
+                ),
                 label: 'Plans',
               ),
               NavigationDestination(
                 icon: Icon(Icons.person_outline, size: iconSize),
-                selectedIcon: Icon(Icons.person, size: iconSize, color: Colors.blueAccent),
+                selectedIcon: Icon(
+                  Icons.person,
+                  size: iconSize,
+                  color: Colors.blueAccent,
+                ),
                 label: 'Profile',
               ),
             ],
@@ -187,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
 
   Widget _buildResponsiveFAB() {
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -755,7 +781,7 @@ class HomeBody extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             SizedBox(
-              height: screenHeight * 0.29,
+              height: screenHeight * 0.2,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: statItems.length,
@@ -771,6 +797,7 @@ class HomeBody extends StatelessWidget {
                       icon: stat['icon'] as IconData,
                       subtitle: stat['subtitle'] as String,
                       context: context,
+                      stats: stats,
                     ),
                   );
                 },
@@ -790,95 +817,269 @@ class HomeBody extends StatelessWidget {
     required IconData icon,
     required String subtitle,
     required BuildContext context,
+    required HomeStatsProvider stats,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isSmallScreen = screenWidth < 375;
 
-    return Container(
-      width: isSmallScreen ? 140 : 160,
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey[900] : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+    return GestureDetector(
+      onTap: () => _showStatDialog(context, title, stats),
+      child: Container(
+        width: isSmallScreen ? 140 : 160,
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[900] : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.2),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+        ),
+        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: isSmallScreen ? 18 : 20, color: color),
+                ),
+                const Spacer(),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: isSmallScreen ? 16 : 18,
+                    fontWeight: FontWeight.w800,
+                    color: color,
+                  ),
                 ),
               ],
-      ),
-      padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: isSmallScreen ? 18 : 20, color: color),
+            ),
+            SizedBox(height: isSmallScreen ? 8 : 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 14 : 16,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : Colors.grey[800],
               ),
-              const Spacer(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: isSmallScreen ? 4 : 6),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: isSmallScreen ? 11 : 13,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            SizedBox(height: isSmallScreen ? 8 : 12),
+            Stack(
+              children: [
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                Container(
+                  height: 6,
+                  width: (isSmallScreen ? 100 : 120) * progress,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStatDialog(BuildContext context, String title, HomeStatsProvider stats) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    String dialogTitle;
+    List<Widget> content = [];
+    
+    switch (title) {
+      case 'Completed Quizzes':
+         dialogTitle = 'Quiz Statistics';
+         content = [
+           _buildDialogRow('Total Quizzes Taken', '${stats.totalQuizzes}', Icons.quiz, context),
+           _buildDialogRow('Average Score', '${stats.avgQuizScore.toStringAsFixed(1)}%', Icons.grade, context),
+           _buildDialogRow('Current Streak', '${stats.streakCount} days', Icons.local_fire_department, context),
+           if (stats.latestExamDate != null && stats.latestExamDate!.isNotEmpty)
+              _buildDialogRow('Next Exam', stats.latestExamDate!, Icons.event, context),
+         ];
+         break;
+         
+       case 'Planner':
+         dialogTitle = 'Study Plan Progress';
+         content = [
+           _buildDialogRow('Total Plans', '${stats.totalPlans}', Icons.assignment, context),
+           _buildDialogRow('Completed Plans', '${stats.completedPlans}', Icons.check_circle, context),
+           _buildDialogRow('Incomplete Plans', '${stats.incompletePlans}', Icons.pending, context),
+           _buildDialogRow('Completion Rate', '${stats.totalPlans > 0 ? ((stats.completedPlans / stats.totalPlans) * 100).toStringAsFixed(1) : 0}%', Icons.trending_up, context),
+         ];
+         break;
+         
+       case 'Goals':
+         dialogTitle = 'Goal Tracking';
+         content = [
+           _buildDialogRow('Study Streak', '${stats.streakCount} days', Icons.local_fire_department, context),
+           _buildDialogRow('Quiz Average', '${stats.avgQuizScore.toStringAsFixed(1)}%', Icons.grade, context),
+           _buildDialogRow('Plans Completed', '${stats.completedPlans}', Icons.check_circle, context),
+           _buildDialogRow('Recommended Notes', '${stats.recommendedNotes.length}', Icons.lightbulb, context),
+         ];
+         break;
+         
+       default:
+         dialogTitle = 'Statistics';
+         content = [
+           _buildDialogRow('No data available', '', Icons.info, context),
+         ];
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: isDark ? Colors.grey[900] : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                _getIconForTitle(title),
+                color: _getColorForTitle(title),
+                size: 28,
+              ),
+              const SizedBox(width: 12),
               Text(
-                value,
+                dialogTitle,
                 style: TextStyle(
-                  fontSize: isSmallScreen ? 16 : 18,
-                  fontWeight: FontWeight.w800,
-                  color: color,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.grey[800],
                 ),
               ),
             ],
           ),
-          SizedBox(height: isSmallScreen ? 8 : 12),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: content,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  color: _getColorForTitle(title),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDialogRow(String label, String value, IconData icon, BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: isDark ? Colors.grey[400] : Colors.grey[600],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.grey[300] : Colors.grey[700],
+              ),
+            ),
+          ),
           Text(
-            title,
+            value,
             style: TextStyle(
-              fontSize: isSmallScreen ? 14 : 16,
-              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
               color: isDark ? Colors.white : Colors.grey[800],
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: isSmallScreen ? 4 : 6),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: isSmallScreen ? 11 : 13,
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: isSmallScreen ? 8 : 12),
-          Stack(
-            children: [
-              Container(
-                height: 6,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              Container(
-                height: 6,
-                width: (isSmallScreen ? 100 : 120) * progress,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
+  }
+
+  IconData _getIconForTitle(String title) {
+    switch (title) {
+      case 'Completed Quizzes':
+        return Icons.quiz;
+      case 'Planner':
+        return Icons.assignment;
+      case 'Goals':
+        return Icons.flag;
+      default:
+        return Icons.info;
+    }
+  }
+
+  Color _getColorForTitle(String title) {
+    switch (title) {
+      case 'Completed Quizzes':
+        return Colors.blue;
+      case 'Planner':
+        return Colors.green;
+      case 'Goals':
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = date.difference(now).inDays;
+    
+    if (difference == 0) {
+      return 'Today';
+    } else if (difference == 1) {
+      return 'Tomorrow';
+    } else if (difference > 1) {
+      return 'In $difference days';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 
   Widget _buildRecommendedResources(

@@ -659,61 +659,64 @@ class _ProfileScreenState extends State<ProfileScreen>
         final double spacing = isSmallScreen ? 8 : (isTablet ? 16 : 12);
         final double borderRadius = isSmallScreen ? 16 : (isTablet ? 24 : 20);
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? Colors.grey[800] : Colors.white,
-            borderRadius: BorderRadius.circular(borderRadius),
-            boxShadow: isDark
-                ? null
-                : [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                blurRadius: 15,
-                offset: const Offset(0, 5),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.all(containerPadding),
-          child: Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(iconPadding),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  shape: BoxShape.circle,
+        return GestureDetector(
+          onTap: () => _showStatDialog(context, title),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? Colors.grey[800] : Colors.white,
+              borderRadius: BorderRadius.circular(borderRadius),
+              boxShadow: isDark
+                  ? null
+                  : [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
-                child: Icon(icon, size: iconSize, color: color),
-              ),
-              SizedBox(width: spacing),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: valueSize,
-                        fontWeight: FontWeight.w800,
-                        color: color,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                    SizedBox(height: isSmallScreen ? 2 : 4),
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: titleSize,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                    ),
-                  ],
+              ],
+            ),
+            padding: EdgeInsets.all(containerPadding),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(iconPadding),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: iconSize, color: color),
                 ),
-              ),
-            ],
+                SizedBox(width: spacing),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: valueSize,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      SizedBox(height: isSmallScreen ? 2 : 4),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: titleSize,
+                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -1200,6 +1203,191 @@ class _ProfileScreenState extends State<ProfileScreen>
           backgroundColor: Colors.red.shade600,
         ),
       );
+    }
+  }
+
+  void _showStatDialog(BuildContext context, String title) {
+    final stats = Provider.of<HomeStatsProvider>(context, listen: false);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: isDark ? Colors.grey[800] : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _getColorForTitle(title).withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _getIconForTitle(title),
+                  color: _getColorForTitle(title),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.grey[800],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                ...switch (title) {
+                  'Notes' => [
+                    _buildDialogRow(context, 'Total Notes', stats.recommendedNotes.length.toString()),
+                    if (stats.recommendedNotes.isNotEmpty) ...[
+                       const SizedBox(height: 12),
+                       Text(
+                         'Recommended Notes:',
+                         style: TextStyle(
+                           fontWeight: FontWeight.w600,
+                           color: isDark ? Colors.grey[300] : Colors.grey[700],
+                         ),
+                       ),
+                      const SizedBox(height: 8),
+                      ...stats.recommendedNotes.take(3).map((note) => 
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '• ${note.title}',
+                            style: TextStyle(
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                  'Completed Quizzes' => [
+                    _buildDialogRow(context, 'Total Quizzes', stats.totalQuizzes.toString()),
+                    _buildDialogRow(context, 'Average Score', '${stats.avgQuizScore.toStringAsFixed(1)}%'),
+                    if (stats.totalQuizzes > 0)
+                      _buildDialogRow(context, 'Performance', stats.avgQuizScore >= 80 ? 'Excellent' : stats.avgQuizScore >= 60 ? 'Good' : 'Needs Improvement'),
+                  ],
+                  'Plans' => [
+                    _buildDialogRow(context, 'Total Plans', stats.totalPlans.toString()),
+                    _buildDialogRow(context, 'Completed', stats.completedPlans.toString()),
+                    _buildDialogRow(context, 'In Progress', stats.incompletePlans.toString()),
+                    if (stats.totalPlans > 0)
+                      _buildDialogRow(context, 'Completion Rate', '${((stats.completedPlans / stats.totalPlans) * 100).toStringAsFixed(1)}%'),
+                    if (stats.latestExamDate != null && stats.latestExamDate!.isNotEmpty)
+                      _buildDialogRow(context, 'Next Exam', stats.latestExamDate!),
+                  ],
+                  'Streak' => [
+                    _buildDialogRow(context, 'Current Streak', '${stats.streakCount} days'),
+                    _buildDialogRow(context, 'Status', stats.streakCount >= 7 ? 'On Fire! 🔥' : stats.streakCount >= 3 ? 'Great Progress! 👍' : 'Keep Going! 💪'),
+                    if (stats.streakCount > 0)
+                      _buildDialogRow(context, 'Motivation', 'You\'re doing amazing! Keep up the great work!'),
+                  ],
+                  _ => [
+                    Text(
+                      'No additional information available.',
+                      style: TextStyle(
+                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                },
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Close',
+                style: TextStyle(
+                  color: _getColorForTitle(title),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDialogRow(BuildContext context, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.grey[300] : Colors.grey[700],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getIconForTitle(String title) {
+    switch (title) {
+      case 'Notes':
+        return Icons.note_rounded;
+      case 'Completed Quizzes':
+        return Icons.quiz_rounded;
+      case 'Plans':
+        return Icons.calendar_today_rounded;
+      case 'Streak':
+        return Icons.local_fire_department_rounded;
+      default:
+        return Icons.info_rounded;
+    }
+  }
+
+  Color _getColorForTitle(String title) {
+    switch (title) {
+      case 'Notes':
+        return Colors.purple;
+      case 'Completed Quizzes':
+        return Colors.orange;
+      case 'Plans':
+        return Colors.green;
+      case 'Streak':
+        return Colors.red;
+      default:
+        return Colors.blue;
     }
   }
 }

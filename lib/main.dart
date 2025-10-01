@@ -56,9 +56,9 @@ class MyApp extends StatelessWidget {
             return previousAuthProvider!..notifyListeners();
           },
         ),
-        ChangeNotifierProvider(create: (_)=> NotesProvider(firestoreService:FirestoreService() )..loadNotes()),
-        ChangeNotifierProvider(create: (_)=> ChatProvider(geminiService: GeminiService())),
-        ChangeNotifierProvider(create: (_)=> QuizProvider(geminiService: GeminiService())),
+        ChangeNotifierProvider(create: (_) => NotesProvider(firestoreService:FirestoreService() )..loadNotes()),
+        ChangeNotifierProvider(create: (_) => ChatProvider(geminiService: GeminiService())),
+        ChangeNotifierProvider(create: (_) => QuizProvider(geminiService: GeminiService())),
         ChangeNotifierProvider(create: (_) => StudyPlannerProvider(geminiService: GeminiService(),)),
         ChangeNotifierProvider(create: (_) => HomeworkProvider()),
         ChangeNotifierProvider(create: (_) => HomeStatsProvider()..loadDashboard()),
@@ -66,7 +66,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Student AI App',
+        title: 'Mentor AI App',
         theme: ThemeData.light(),         // Light theme
         themeMode: ThemeMode.light,
         home: const SplashWrapper(),

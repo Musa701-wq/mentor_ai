@@ -52,6 +52,11 @@ class _SharedNotesScreenState extends State<SharedNotesScreen> {
     provider.loadSharedNotes(uid: uid, reset: true, query: query);
   }
 
+
+
+
+
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -307,7 +312,9 @@ class _SharedNotesScreenState extends State<SharedNotesScreen> {
                                             builder: (_) =>
                                                 NoteDetailScreen(
                                                   note: note,
-                                                  onShare: () {},
+                                                  onShare: () {
+                                                    _openShareDialog(note);
+                                                  },
                                                 ),
                                           ),
                                         );

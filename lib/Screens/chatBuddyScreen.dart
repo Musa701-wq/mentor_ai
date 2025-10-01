@@ -271,7 +271,7 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
                         return _buildTypingDots();
                       }
                       final msg = messages[index];
-                      final bool isTyping = !msg.isUser && index == messages.length - 1 && chatProvider.isLoading == false;
+                      final bool isTyping = !msg.isUser && index == messages.length - 1 && chatProvider.isLoading == true;
                       return _buildMessageBubble(msg.text, msg.isUser, isTyping: isTyping);
                     },
                   ),

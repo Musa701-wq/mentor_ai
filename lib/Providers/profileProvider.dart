@@ -49,7 +49,10 @@ class ProfileProvider with ChangeNotifier {
 
     // Update Firestore
     try {
-      await _firestore.collection('users').doc(_user!.uid).update(_user!.toMap());
+      await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .update(_user!.toMap());
     } catch (e) {
       debugPrint("Error updating user in Firestore: $e");
       rethrow;
@@ -74,34 +77,52 @@ class ProfileProvider with ChangeNotifier {
   // Re-authenticate user before sensitive operations
   Future<void> _reauthenticateUser() async {
     debugPrint("🔐 [REAUTH] Starting re-authentication process");
-    
+
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
       debugPrint("❌ [REAUTH] No current user found");
       throw Exception("No user logged in");
     }
 
-    debugPrint("👤 [REAUTH] Current user: ${currentUser.uid}, Email: ${currentUser.email}");
-    
+    debugPrint(
+      "👤 [REAUTH] Current user: ${currentUser.uid}, Email: ${currentUser.email}",
+    );
+
     // Check which provider the user used to sign in
     final providerData = currentUser.providerData;
-    debugPrint("🔍 [REAUTH] User providers: ${providerData.map((p) => p.providerId).toList()}");
-    
+    debugPrint(
+      "🔍 [REAUTH] User providers: ${providerData.map((p) => p.providerId).toList()}",
+    );
+
     AuthCredential? credential;
-    
+
     // Handle Google Sign-In re-authentication
     if (providerData.any((provider) => provider.providerId == 'google.com')) {
       debugPrint("🔄 [REAUTH] Re-authenticating with Google");
       try {
         final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
         final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-        
+
         if (googleUser == null) {
           debugPrint("❌ [REAUTH] Google sign-in cancelled by user");
           throw Exception("Google re-authentication cancelled");
         }
-        
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        // ✅ Enforce same-account login for Google
+        final String? currentEmail = currentUser.email?.toLowerCase();
+        final String selectedEmail = googleUser.email.toLowerCase();
+        if (currentEmail != null && currentEmail != selectedEmail) {
+          debugPrint(
+            "❌ [REAUTH] Selected Google account does not match current user. Current: $currentEmail, Selected: $selectedEmail",
+          );
+          await googleSignIn.signOut();
+          throw Exception(
+            "Please sign in with the same Google account (${currentEmail}) to continue.",
+          );
+        }
+
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
         credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
@@ -113,7 +134,9 @@ class ProfileProvider with ChangeNotifier {
       }
     }
     // Handle Apple Sign-In re-authentication
-    else if (providerData.any((provider) => provider.providerId == 'apple.com')) {
+    else if (providerData.any(
+      (provider) => provider.providerId == 'apple.com',
+    )) {
       debugPrint("🔄 [REAUTH] Re-authenticating with Apple");
       try {
         final appleCredential = await SignInWithApple.getAppleIDCredential(
@@ -122,7 +145,7 @@ class ProfileProvider with ChangeNotifier {
             AppleIDAuthorizationScopes.fullName,
           ],
         );
-        
+
         credential = OAuthProvider('apple.com').credential(
           idToken: appleCredential.identityToken,
           accessToken: appleCredential.authorizationCode,
@@ -132,12 +155,13 @@ class ProfileProvider with ChangeNotifier {
         debugPrint("❌ [REAUTH] Apple re-authentication failed: $e");
         rethrow;
       }
-    }
-    else {
+    } else {
       debugPrint("❌ [REAUTH] Unsupported authentication provider");
-      throw Exception("Unsupported authentication provider for re-authentication");
+      throw Exception(
+        "Unsupported authentication provider for re-authentication",
+      );
     }
-    
+
     // Re-authenticate with Firebase
     if (credential != null) {
       debugPrint("🔐 [REAUTH] Performing Firebase re-authentication");
@@ -151,51 +175,51 @@ class ProfileProvider with ChangeNotifier {
 
   Future<void> deleteAccount(BuildContext context) async {
     debugPrint("🔥 [DELETE_ACCOUNT] Starting account deletion process");
-    
+
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) {
         debugPrint("❌ [DELETE_ACCOUNT] User is null");
         throw Exception("User is not authenticated");
       }
-      
-      debugPrint("👤 [DELETE_ACCOUNT] Current user: ${currentUser.uid}, Email: ${currentUser.email}");
-      
+
+      debugPrint(
+        "👤 [DELETE_ACCOUNT] Current user: ${currentUser.uid}, Email: ${currentUser.email}",
+      );
+
       // Re-authenticate user before deletion
       debugPrint("🔐 [DELETE_ACCOUNT] Attempting re-authentication");
       await _reauthenticateUser();
       debugPrint("✅ [DELETE_ACCOUNT] Re-authentication successful");
-      
+
       // Delete user data from Firestore
       debugPrint("🗑️ [DELETE_ACCOUNT] Deleting Firestore document");
       await _firestore.collection('users').doc(currentUser.uid).delete();
       debugPrint("✅ [DELETE_ACCOUNT] Firestore document deleted");
-      
+
       // Delete Firebase Auth account
       debugPrint("🔥 [DELETE_ACCOUNT] Deleting Firebase Auth account");
       await currentUser.delete();
       debugPrint("✅ [DELETE_ACCOUNT] Firebase Auth account deleted");
-      
+
       // Clear local user data
       debugPrint("🧹 [DELETE_ACCOUNT] Clearing local user data");
       _user = null;
       notifyListeners();
       debugPrint("✅ [DELETE_ACCOUNT] Local user data cleared");
-      
-      // Navigate to AuthWrapper
-      debugPrint("🔄 [DELETE_ACCOUNT] Navigating to AuthWrapper");
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const AuthWrapper()),
-        (route) => false,
+
+      // ✅ Do not navigate here; let the caller close dialogs and navigate cleanly
+      debugPrint(
+        "✅ [DELETE_ACCOUNT] Account deletion completed successfully (no navigation from provider)",
       );
-      debugPrint("✅ [DELETE_ACCOUNT] Account deletion completed successfully");
-      
     } on FirebaseAuthException catch (e) {
       debugPrint("❌ [DELETE_ACCOUNT] FirebaseAuthException occurred");
       debugPrint("📊 [DELETE_ACCOUNT] Error type: FirebaseAuthException");
       debugPrint("📝 [DELETE_ACCOUNT] Error details: ${e.toString()}");
       debugPrint("🔐 [DELETE_ACCOUNT] Firebase Auth Error Code: ${e.code}");
-      debugPrint("🔐 [DELETE_ACCOUNT] Firebase Auth Error Message: ${e.message}");
+      debugPrint(
+        "🔐 [DELETE_ACCOUNT] Firebase Auth Error Message: ${e.message}",
+      );
       rethrow;
     } on FirebaseException catch (e) {
       debugPrint("❌ [DELETE_ACCOUNT] FirebaseException occurred");
@@ -211,5 +235,4 @@ class ProfileProvider with ChangeNotifier {
       rethrow;
     }
   }
-
 }

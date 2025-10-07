@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:student_ai/config/app_links.dart';
 import 'package:student_ai/Screens/sharedItems/sharedContentHub.dart';
 import '../Providers/authProvider.dart';
 import '../Providers/notesProvider.dart';
@@ -16,6 +18,7 @@ import 'addPlans/showPlanFeed.dart';
 import 'addQuiz/addQuiz.dart';
 import 'addQuiz/quizListScreen.dart';
 import 'addnotes/add_notes_screen.dart';
+import 'authwrapper.dart';
 import 'chatBuddyScreen.dart';
 import 'homeworkHelper/homeworkScreen.dart';
 import 'notesFeed/notesFeedScreen.dart';
@@ -60,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
 
     Future.microtask(
-      () => Provider.of<HomeStatsProvider>(
+          () => Provider.of<HomeStatsProvider>(
         context,
         listen: false,
       ).fetchRecommendedNotes(),
@@ -79,16 +82,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           .snapshots()
           .listen(
             (doc) {
-              if (doc.exists) {
-                setState(() {
-                  _isProUser = doc.data()?['isPro'] ?? false;
-                });
-              }
-            },
-            onError: (error) {
-              debugPrint('Error listening to pro status: $error');
-            },
-          );
+          if (doc.exists) {
+            setState(() {
+              _isProUser = doc.data()?['isPro'] ?? false;
+            });
+          }
+        },
+        onError: (error) {
+          debugPrint('Error listening to pro status: $error');
+        },
+      );
     }
   }
 
@@ -109,11 +112,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         profile: profile,
         animation: _fadeAnimation,
         isProUser: _isProUser,
+        onNavigateToIndex: (index) {
+          setState(() {
+            _selectedIndex = index;
+            if (index == 1) {
+              _notesKey = DateTime.now().millisecondsSinceEpoch;
+            }
+          });
+        },
       ),
       NotesFeedScreen(key: ValueKey(_notesKey)),
       QuizListScreen(),
       PlanFeedScreen(),
-      ProfileScreen(uid: FirebaseAuth.instance.currentUser!.uid),
+      ProfileScreen(uid: FirebaseAuth.instance.currentUser?.uid ?? ''),
     ];
 
     return Scaffold(
@@ -125,12 +136,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildResponsiveBottomNavBar() {
     final double screenWidth = MediaQuery.of(context).size.width;
-    final bool isSmallScreen = screenWidth < 375; // iPhone SE, mini
+    final bool isSmallScreen = screenWidth < 375;
     final double iconSize = isSmallScreen ? 22 : 28;
     final double fontSize = isSmallScreen ? 10 : 12;
 
     return Padding(
-      padding: const EdgeInsets.all(12.0), // margin from edges
+      padding: const EdgeInsets.all(12.0),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.9),
@@ -147,20 +158,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(30),
           child: NavigationBar(
             height: 70,
-            backgroundColor: Colors.transparent, // glass effect
+            backgroundColor: Colors.transparent,
             surfaceTintColor: Colors.transparent,
             elevation: 0,
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) {
               setState(
-                () => {
+                    () => {
                   _selectedIndex = index,
                   if (index == 1)
                     {_notesKey = DateTime.now().millisecondsSinceEpoch},
                 },
               );
             },
-            indicatorColor: Colors.blueAccent.withOpacity(0.15),
+            indicatorColor: const Color(0xFF6C63FF).withOpacity(0.15),
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             destinations: [
               NavigationDestination(
@@ -168,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedIcon: Icon(
                   Icons.home,
                   size: iconSize,
-                  color: Colors.blueAccent,
+                  color: const Color(0xFF6C63FF),
                 ),
                 label: 'Home',
               ),
@@ -177,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedIcon: Icon(
                   Icons.note,
                   size: iconSize,
-                  color: Colors.blueAccent,
+                  color: const Color(0xFF6C63FF),
                 ),
                 label: 'Notes',
               ),
@@ -186,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedIcon: Icon(
                   Icons.quiz,
                   size: iconSize,
-                  color: Colors.blueAccent,
+                  color: const Color(0xFF6C63FF),
                 ),
                 label: 'Quiz',
               ),
@@ -195,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedIcon: Icon(
                   Icons.queue_play_next,
                   size: iconSize,
-                  color: Colors.blueAccent,
+                  color: const Color(0xFF6C63FF),
                 ),
                 label: 'Plans',
               ),
@@ -204,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 selectedIcon: Icon(
                   Icons.person,
                   size: iconSize,
-                  color: Colors.blueAccent,
+                  color: const Color(0xFF6C63FF),
                 ),
                 label: 'Profile',
               ),
@@ -232,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 vertical: isSmallScreen ? 6 : 8,
               ),
               decoration: BoxDecoration(
-                color: Colors.deepPurple,
+                color: const Color(0xFF6C63FF),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -252,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
         FloatingActionButton(
-          backgroundColor: Colors.deepPurple,
+          backgroundColor: const Color(0xFF6C63FF),
           onPressed: () {
             Navigator.push(
               context,
@@ -278,12 +289,14 @@ class HomeBody extends StatelessWidget {
   final dynamic profile;
   final Animation<double> animation;
   final bool isProUser;
+  final void Function(int index)? onNavigateToIndex;
 
   const HomeBody({
     super.key,
     required this.profile,
     required this.animation,
     required this.isProUser,
+    this.onNavigateToIndex,
   });
 
   @override
@@ -291,233 +304,1046 @@ class HomeBody extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
 
-    final adWidget = AdService.bannerAd != null && !isProUser
+    final localBannerAd = !isProUser ? AdService.createBannerAd() : null;
+
+    final adWidget = localBannerAd != null
         ? Container(
-            alignment: Alignment.center,
-            width: AdService.bannerAd!.size.width.toDouble(),
-            height: AdService.bannerAd!.size.height.toDouble(),
-            child: AdWidget(ad: AdService.bannerAd!),
-          )
+      alignment: Alignment.center,
+      width: localBannerAd.size.width.toDouble(),
+      height: localBannerAd.size.height.toDouble(),
+      child: AdWidget(ad: localBannerAd),
+    )
         : const SizedBox();
 
     return FadeTransition(
       opacity: animation,
-      child: Column(
-        children: [
-          Expanded(
-            child: CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Text(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF5F5FF), Color(0xFFE6E6FF)],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             "Home",
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 30,
                               fontWeight: FontWeight.bold,
+                              color: const Color(0xFF2D2B4E),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 15),
-                        _buildWelcomeHeader(
-                          context,
-                          profile,
-                          isDark,
-                          isProUser,
-                        ),
-                        const SizedBox(height: 28),
-                        _buildProgressOverview(
-                          context,
-                          screenWidth,
-                          screenHeight,
-                        ),
-                        const SizedBox(height: 32),
-                        _buildQuickActions(context),
-                        const SizedBox(height: 32),
-                        _buildRecommendedResources(
-                          context,
-                          screenWidth,
-                          screenHeight,
-                        ),
-                        const SizedBox(height: 24),
-                      ],
+                          const SizedBox(height: 15),
+
+                          // Show different header based on login status
+                          if (isLoggedIn)
+                            _buildWelcomeHeader(
+                              context,
+                              profile,
+                              isDark,
+                              isProUser,
+                            )
+                          else
+                            _buildGuestWelcomeHeader(context, isDark),
+
+                          const SizedBox(height: 28),
+
+                          // Show different content based on login status
+                          if (isLoggedIn) ...[
+                            _buildProgressOverview(
+                              context,
+                              screenWidth,
+                              screenHeight,
+                            ),
+                            const SizedBox(height: 32),
+                            _buildQuickActions(context),
+                            const SizedBox(height: 32),
+                            _buildRecommendedResources(
+                              context,
+                              screenWidth,
+                              screenHeight,
+                            ),
+                          ] else ...[
+                            _buildGuestQuickActions(context),
+                            const SizedBox(height: 32),
+                            _buildGuestFeatures(context),
+                          ],
+
+                          const SizedBox(height: 24),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          adWidget, // ✅ Banner at bottom
-        ],
+            Center(child: adWidget),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildWelcomeHeader(
-    BuildContext context,
-    dynamic profile,
-    bool isDark,
-    bool isProUser,
-  ) {
+  // Guest Welcome Header
+  Widget _buildGuestWelcomeHeader(BuildContext context, bool isDark) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final bool isSmallScreen = screenWidth < 375;
+    final bool isLargeScreen = screenWidth > 600;
 
     return Container(
-      padding: EdgeInsets.all(screenWidth > 600 ? 28 : 24),
+      padding: EdgeInsets.all(isLargeScreen ? 24 : 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [Colors.deepPurple.shade700, Colors.purple.shade900]
-              : [Colors.deepPurple.shade400, Colors.purple.shade600],
+              ? [
+            const Color(0xFF7C4DFF),
+            const Color(0xFF448AFF),
+            const Color(0xFF00B0FF),
+          ]
+              : [
+            const Color(0xFF6A1B9A),
+            const Color(0xFF8E24AA),
+            const Color(0xFFAB47BC),
+          ],
+          stops: const [0.0, 0.6, 1.0],
         ),
-        borderRadius: BorderRadius.circular(screenWidth > 600 ? 28 : 24),
+        borderRadius: BorderRadius.circular(isLargeScreen ? 24 : 20),
         boxShadow: [
           BoxShadow(
-            color: Colors.purple.withOpacity(isDark ? 0.4 : 0.3),
+            color: Colors.purple.withOpacity(isDark ? 0.3 : 0.2),
             blurRadius: 20,
             offset: const Offset(0, 6),
+            spreadRadius: 1,
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Stack(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Guest Icon
               Container(
+                padding: const EdgeInsets.all(2.5),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 2,
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white,
+                      Colors.amber.shade200,
+                    ],
                   ),
-                ),
-                child: CircleAvatar(
-                  radius: screenWidth > 600 ? 36 : 32,
-                  backgroundColor: Colors.white,
-                  backgroundImage: profile?.profilePic != null
-                      ? NetworkImage(profile.profilePic)
-                      : null,
-                  child: profile?.profilePic == null
-                      ? Icon(
-                          Icons.person,
-                          size: screenWidth > 600 ? 32 : 30,
-                          color: Colors.deepPurple.shade400,
-                        )
-                      : null,
-                ),
-              ),
-              if (isProUser)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.amber,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Icon(
-                      Icons.star,
-                      color: Colors.deepPurple,
-                      size: screenWidth > 600 ? 16 : 14,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(width: screenWidth > 600 ? 24 : 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      "Hello, ${profile?.name?.split(' ').first ?? 'Student'}!",
-                      style: TextStyle(
-                        fontSize: screenWidth > 600 ? 24 : 22,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                    if (isProUser) const SizedBox(width: 8),
-                    if (isProUser)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          "Premium User",
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  isProUser
-                      ? "Enjoy your premium ads free experience! 🎉"
-                      : "Ready to boost your productivity today?",
-                  style: TextStyle(
-                    fontSize: screenWidth > 600 ? 16 : 15,
-                    height: 1.4,
-                    color: Colors.white.withOpacity(0.9),
+                child: CircleAvatar(
+                  radius: isLargeScreen ? 28 : 24,
+                  backgroundColor: Colors.white,
+                  child: Icon(
+                    Icons.person_outline_rounded,
+                    size: isLargeScreen ? 26 : 22,
+                    color: const Color(0xFF6A1B9A),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+              ),
+              const SizedBox(width: 12),
+
+              // Welcome Message for Guest
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Welcome to Mentor AI! 👋",
+                      style: TextStyle(
+                        fontSize: isLargeScreen ? 20 : 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Join thousands of students boosting their productivity",
+                      style: TextStyle(
+                        fontSize: isLargeScreen ? 14 : 13,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Login/Signup Buttons
+          Row(
+            children: [
+              Expanded(
+                child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white.withOpacity(0.15),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
-                  child: Consumer<HomeStatsProvider>(
-                    builder: (context, stats, _) {
-                      if (stats.loading) {
-                        return const Text(
-                          "Loading goals...",
-                          style: TextStyle(color: Colors.white),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AuthWrapper(isHome: true),
+                          ),
                         );
-                      }
-                      return Text(
-                        "Tasks: ${stats.completedPlans}/${stats.completedPlans + stats.incompletePlans} completed",
-                        style: TextStyle(
-                          fontSize: screenWidth > 600 ? 14 : 13,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w500,
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.login_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Login",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.purple.withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AuthWrapper(isHome: true),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_add_rounded,
+                              size: 18,
+                              color: const Color(0xFF6A1B9A),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Sign Up",
+                              style: TextStyle(
+                                color: const Color(0xFF6A1B9A),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  // Guest Quick Actions
+  Widget _buildGuestQuickActions(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isSmallScreen = screenWidth < 375;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            'Get Started',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 24 : 22,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : Colors.grey[800],
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          height: isSmallScreen ? 140 : 160,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            children: [
+              const SizedBox(width: 4),
+              _buildGuestActionCard(
+                title: 'Create Notes',
+                icon: Icons.note_add_rounded,
+                subtitle: 'Organize your study materials',
+                colors: const [Color(0xFF9C27B0), Color(0xFF673AB7)],
+                context: context,
+              ),
+              _buildGuestActionCard(
+                title: 'Study Plans',
+                icon: Icons.auto_awesome_mosaic_rounded,
+                subtitle: 'Plan your learning journey',
+                colors: const [Color(0xFF2196F3), Color(0xFF03A9F4)],
+                context: context,
+              ),
+              _buildGuestActionCard(
+                title: 'Take Quizzes',
+                icon: Icons.quiz_rounded,
+                subtitle: 'Test your knowledge',
+                colors: const [Color(0xFFFF9800), Color(0xFFFF5722)],
+                context: context,
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGuestActionCard({
+    required String title,
+    required IconData icon,
+    required String subtitle,
+    required List<Color> colors,
+    required BuildContext context,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isSmallScreen = screenWidth < 375;
+
+    return Container(
+      width: isSmallScreen ? 140 : 160,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child: Material(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            _showLoginPrompt(context);
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: colors,
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x1A000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
+                ),
+              ],
+            ),
+            padding: EdgeInsets.all(isSmallScreen ? 14 : 18),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(isSmallScreen ? 8 : 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: isSmallScreen ? 22 : 26,
+                    color: Colors.white,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: isSmallScreen ? 14 : 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontWeight: FontWeight.w500,
+                    fontSize: isSmallScreen ? 11 : 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Guest Features Section
+  Widget _buildGuestFeatures(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            'Why Join Mentor AI?',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 24 : 22,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : Colors.grey[800],
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey[800] : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: isDark
+                ? null
+                : [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.1),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              _buildFeatureItem(
+                icon: Icons.auto_awesome_rounded,
+                title: "AI-Powered Learning",
+                subtitle: "Smart study plans and personalized recommendations",
+                color: Colors.purple,
+              ),
+              const SizedBox(height: 16),
+              _buildFeatureItem(
+                icon: Icons.track_changes_rounded,
+                title: "Progress Tracking",
+                subtitle: "Monitor your learning journey with detailed analytics",
+                color: Colors.blue,
+              ),
+              const SizedBox(height: 16),
+              _buildFeatureItem(
+                icon: Icons.share_rounded,
+                title: "Collaborative Learning",
+                subtitle: "Share notes and quizzes with friends",
+                color: Colors.green,
+              ),
+              const SizedBox(height: 16),
+              _buildFeatureItem(
+                icon: Icons.workspace_premium_rounded,
+                title: "Premium Features",
+                subtitle: "Ad-free experience with advanced tools",
+                color: Colors.orange,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AuthWrapper(isHome: true),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6C63FF),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 5,
+              shadowColor: const Color(0xFF6C63FF).withOpacity(0.4),
+            ),
+            child: const Text(
+              'Start Your Learning Journey',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF2D2B4E),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.login_rounded, color: Color(0xFF6C63FF)),
+              SizedBox(width: 12),
+              Text(
+                "Join Mentor AI",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2D2B4E),
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            "Please login or create an account to access this feature and start your learning journey!",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Later',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => AuthWrapper(isHome: true),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6C63FF),
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Login / Sign Up'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Original Welcome Header for logged-in users
+  Widget _buildWelcomeHeader(
+      BuildContext context,
+      dynamic profile,
+      bool isDark,
+      bool isProUser,
+      ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isSmallScreen = screenWidth < 375;
+    final bool isLargeScreen = screenWidth > 600;
+
+    return Container(
+      padding: EdgeInsets.all(isLargeScreen ? 24 : 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+            const Color(0xFF7C4DFF),
+            const Color(0xFF448AFF),
+            const Color(0xFF00B0FF),
+          ]
+              : [
+            const Color(0xFF6A1B9A),
+            const Color(0xFF8E24AA),
+            const Color(0xFFAB47BC),
+          ],
+          stops: const [0.0, 0.6, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(isLargeScreen ? 24 : 20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.purple.withOpacity(isDark ? 0.3 : 0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Consumer<HomeStatsProvider>(
+        builder: (context, stats, _) {
+          return Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.white,
+                              Colors.amber.shade200,
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: isLargeScreen ? 28 : 24,
+                          backgroundColor: Colors.white,
+                          backgroundImage: profile?.profilePic != null
+                              ? NetworkImage(profile.profilePic)
+                              : null,
+                          child: profile?.profilePic == null
+                              ? Icon(
+                            Icons.person,
+                            size: isLargeScreen ? 26 : 22,
+                            color: const Color(0xFF6A1B9A),
+                          )
+                              : null,
+                        ),
+                      ),
+                      if (isProUser)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: const BoxDecoration(
+                              color: Colors.amber,
+                              shape: BoxShape.circle,
+                              border: Border.fromBorderSide(
+                                BorderSide(color: Colors.white, width: 1.5),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 3,
+                                  offset: Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.workspace_premium,
+                              color: Colors.deepPurple,
+                              size: isLargeScreen ? 12 : 10,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                "Welcome back, ${profile?.name?.split(' ').first ?? 'Student'}! 👋",
+                                style: TextStyle(
+                                  fontSize: isLargeScreen ? 20 : 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                  height: 1.2,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          isProUser
+                              ? "Premium experience activated! ✨"
+                              : "Let's make today productive! 💪",
+                          style: TextStyle(
+                            fontSize: isLargeScreen ? 14 : 13,
+                            color: Colors.white.withOpacity(0.9),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.15),
+                    ),
+                    child: IconButton(
+                      iconSize: isLargeScreen ? 20 : 18,
+                      tooltip: 'Share App',
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      onPressed: () {
+                        Share.share(appStoreUrl);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: stats.loading
+                    ? Row(
+                  children: [
+                    Icon(
+                      Icons.hourglass_empty,
+                      color: Colors.white.withOpacity(0.7),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Loading progress...",
+                      style: TextStyle(
+                        fontSize: isLargeScreen ? 13 : 12,
+                        color: Colors.white.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                )
+                    : Row(
+                  children: [
+                    Icon(
+                      Icons.trending_up_rounded,
+                      color: Colors.white,
+                      size: isLargeScreen ? 18 : 16,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Daily Progress",
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 13 : 12,
+                              color: Colors.white.withOpacity(0.8),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${stats.completedPlans}/${stats.completedPlans + stats.incompletePlans} tasks",
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 14 : 13,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Stack(
+                            children: [
+                              Container(
+                                height: 6,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(3),
+                                  color: Colors.white.withOpacity(0.2),
+                                ),
+                              ),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final totalTasks = stats.completedPlans + stats.incompletePlans;
+                                  final completionRate = totalTasks > 0
+                                      ? (stats.completedPlans / totalTasks)
+                                      : 0;
+                                  return AnimatedContainer(
+                                    duration: const Duration(milliseconds: 800),
+                                    curve: Curves.easeOut,
+                                    height: 6,
+                                    width: constraints.maxWidth * completionRate,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.greenAccent.shade400,
+                                          Colors.blueAccent.shade400,
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${(((stats.completedPlans + stats.incompletePlans) > 0 ? (stats.completedPlans / (stats.completedPlans + stats.incompletePlans)) : 0) * 100).round()}% complete",
+                            style: TextStyle(
+                              fontSize: isLargeScreen ? 11 : 10,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildMiniStat(
+                      icon: Icons.quiz_rounded,
+                      value: "Quizzes",
+                      count: stats.totalQuizzes,
+                      context: context,
+                      onTap: () {
+                        onNavigateToIndex?.call(2);
+                      },
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 20,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  Expanded(
+                    child: _buildMiniStat(
+                      icon: Icons.notes_rounded,
+                      value: "Notes",
+                      count: stats.recommendedNotes.length,
+                      context: context,
+                      onTap: () {
+                        onNavigateToIndex?.call(1);
+                      },
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 20,
+                    color: Colors.white.withOpacity(0.3),
+                  ),
+                  Expanded(
+                    child: _buildMiniStat(
+                      icon: Icons.flag_rounded,
+                      value: "Goals",
+                      count: stats.totalPlans,
+                      context: context,
+                      onTap: () {
+                        onNavigateToIndex?.call(3);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMiniStat({
+    required IconData icon,
+    required String value,
+    required int count,
+    required BuildContext context,
+    VoidCallback? onTap,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isLargeScreen = screenWidth > 600;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: isLargeScreen ? 16 : 14,
+                  color: Colors.white.withOpacity(0.9),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  count.toString(),
+                  style: TextStyle(
+                    fontSize: isLargeScreen ? 16 : 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: isLargeScreen ? 12 : 11,
+                color: Colors.white.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Keep all your existing methods for logged-in users
   Widget _buildQuickActions(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -544,23 +1370,9 @@ class HomeBody extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             children: [
               const SizedBox(width: 4),
-              _buildActionCard(
-                title: 'Add Notes',
-                icon: Icons.note_add_rounded,
-                subtitle: 'Create new notes',
-                colors: const [Color(0xFF9C27B0), Color(0xFF673AB7)],
-                onTap: () {
-                  print("Navigating to AddNotesScreen");
-                  AdService.showInterstitialAndNavigate(
-                    context,
-                    AddNotesScreen(),
-                  );
-                },
-                context: context,
-              ),
 
               _buildActionCard(
-                title: 'Study Plan',
+                title: 'Create Study Plan',
                 icon: Icons.auto_awesome_mosaic_rounded,
                 subtitle: 'Plan your study',
                 colors: const [Color(0xFF2196F3), Color(0xFF03A9F4)],
@@ -581,6 +1393,19 @@ class HomeBody extends StatelessWidget {
                   AdService.showInterstitialAndNavigate(
                     context,
                     AddQuizScreen(),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'Add Notes',
+                icon: Icons.note_add_rounded,
+                subtitle: 'Create new notes',
+                colors: const [Color(0xFF9C27B0), Color(0xFF673AB7)],
+                onTap: () {
+                  AdService.showInterstitialAndNavigate(
+                    context,
+                    AddNotesScreen(),
                   );
                 },
                 context: context,
@@ -668,11 +1493,11 @@ class HomeBody extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: colors,
               ),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
-                  color: colors[0].withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: Color(0x1A000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
                 ),
               ],
             ),
@@ -720,10 +1545,10 @@ class HomeBody extends StatelessWidget {
   }
 
   Widget _buildProgressOverview(
-    BuildContext context,
-    double screenWidth,
-    double screenHeight,
-  ) {
+      BuildContext context,
+      double screenWidth,
+      double screenHeight,
+      ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Consumer<HomeStatsProvider>(
@@ -734,7 +1559,7 @@ class HomeBody extends StatelessWidget {
 
         final statItems = [
           {
-            'title': 'Completed Quizzes',
+            'title': 'Quizzes',
             'value': stats.totalQuizzes.toString(),
             'progress': stats.avgQuizScore / 100,
             'color': Colors.orange,
@@ -754,10 +1579,10 @@ class HomeBody extends StatelessWidget {
           {
             'title': 'Goals',
             'value':
-                "${stats.completedPlans}/${stats.completedPlans + stats.incompletePlans}",
+            "${stats.completedPlans}/${stats.completedPlans + stats.incompletePlans}",
             'progress': (stats.completedPlans + stats.incompletePlans) > 0
                 ? stats.completedPlans /
-                      (stats.completedPlans + stats.incompletePlans)
+                (stats.completedPlans + stats.incompletePlans)
                 : 0.0,
             'color': Colors.blue,
             'icon': Icons.flag_rounded,
@@ -781,7 +1606,7 @@ class HomeBody extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             SizedBox(
-              height: screenHeight * 0.2,
+              height: max(140, min(200, screenHeight * 0.22)),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: statItems.length,
@@ -821,84 +1646,90 @@ class HomeBody extends StatelessWidget {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
+    final bool isTiny = screenWidth < 340;
     final bool isSmallScreen = screenWidth < 375;
+    final bool isMediumScreen = screenWidth < 420;
 
     return GestureDetector(
       onTap: () => _showStatDialog(context, title, stats),
       child: Container(
-        width: isSmallScreen ? 140 : 160,
+        width: isTiny ? 130 : (isSmallScreen ? 140 : (isMediumScreen ? 160 : 180)),
         decoration: BoxDecoration(
           color: isDark ? Colors.grey[900] : Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: isDark
               ? null
               : [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    blurRadius: 15,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
-        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
+        padding: EdgeInsets.all(isTiny ? 10 : (isSmallScreen ? 12 : (isMediumScreen ? 14 : 16))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(isTiny ? 6 : 8),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(icon, size: isSmallScreen ? 18 : 20, color: color),
+                  child: Icon(
+                    icon,
+                    size: isTiny ? 16 : (isSmallScreen ? 18 : (isMediumScreen ? 20 : 22)),
+                    color: color,
+                  ),
                 ),
                 const Spacer(),
                 Text(
                   value,
                   style: TextStyle(
-                    fontSize: isSmallScreen ? 16 : 18,
+                    fontSize: isTiny ? 14 : (isSmallScreen ? 16 : (isMediumScreen ? 18 : 20)),
                     fontWeight: FontWeight.w800,
                     color: color,
                   ),
                 ),
               ],
             ),
-            SizedBox(height: isSmallScreen ? 8 : 12),
+            SizedBox(height: isTiny ? 6 : (isSmallScreen ? 8 : 12)),
             Text(
               title,
               style: TextStyle(
-                fontSize: isSmallScreen ? 14 : 16,
+                fontSize: isTiny ? 12 : (isSmallScreen ? 14 : 16),
                 fontWeight: FontWeight.w700,
                 color: isDark ? Colors.white : Colors.grey[800],
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: isSmallScreen ? 4 : 6),
+            SizedBox(height: isTiny ? 3 : (isSmallScreen ? 4 : 6)),
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: isSmallScreen ? 11 : 13,
+                fontSize: isTiny ? 10 : (isSmallScreen ? 11 : 13),
                 color: isDark ? Colors.grey[400] : Colors.grey[600],
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(height: isSmallScreen ? 8 : 12),
+            SizedBox(height: isTiny ? 6 : (isSmallScreen ? 8 : 12)),
             Stack(
               children: [
                 Container(
-                  height: 6,
+                  height: isTiny ? 4 : 6,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
                 Container(
-                  height: 6,
-                  width: (isSmallScreen ? 100 : 120) * progress,
+                  height: isTiny ? 4 : 6,
+                  width: (isTiny ? 90 : (isSmallScreen ? 100 : (isMediumScreen ? 120 : 140))) * progress,
                   decoration: BoxDecoration(
                     color: color,
                     borderRadius: BorderRadius.circular(3),
@@ -912,49 +1743,113 @@ class HomeBody extends StatelessWidget {
     );
   }
 
-  void _showStatDialog(BuildContext context, String title, HomeStatsProvider stats) {
+  void _showStatDialog(
+      BuildContext context,
+      String title,
+      HomeStatsProvider stats,
+      ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     String dialogTitle;
     List<Widget> content = [];
-    
+
     switch (title) {
-      case 'Completed Quizzes':
-         dialogTitle = 'Quiz Statistics';
-         content = [
-           _buildDialogRow('Total Quizzes Taken', '${stats.totalQuizzes}', Icons.quiz, context),
-           _buildDialogRow('Average Score', '${stats.avgQuizScore.toStringAsFixed(1)}%', Icons.grade, context),
-           _buildDialogRow('Current Streak', '${stats.streakCount} days', Icons.local_fire_department, context),
-           if (stats.latestExamDate != null && stats.latestExamDate!.isNotEmpty)
-              _buildDialogRow('Next Exam', stats.latestExamDate!, Icons.event, context),
-         ];
-         break;
-         
-       case 'Planner':
-         dialogTitle = 'Study Plan Progress';
-         content = [
-           _buildDialogRow('Total Plans', '${stats.totalPlans}', Icons.assignment, context),
-           _buildDialogRow('Completed Plans', '${stats.completedPlans}', Icons.check_circle, context),
-           _buildDialogRow('Incomplete Plans', '${stats.incompletePlans}', Icons.pending, context),
-           _buildDialogRow('Completion Rate', '${stats.totalPlans > 0 ? ((stats.completedPlans / stats.totalPlans) * 100).toStringAsFixed(1) : 0}%', Icons.trending_up, context),
-         ];
-         break;
-         
-       case 'Goals':
-         dialogTitle = 'Goal Tracking';
-         content = [
-           _buildDialogRow('Study Streak', '${stats.streakCount} days', Icons.local_fire_department, context),
-           _buildDialogRow('Quiz Average', '${stats.avgQuizScore.toStringAsFixed(1)}%', Icons.grade, context),
-           _buildDialogRow('Plans Completed', '${stats.completedPlans}', Icons.check_circle, context),
-           _buildDialogRow('Recommended Notes', '${stats.recommendedNotes.length}', Icons.lightbulb, context),
-         ];
-         break;
-         
-       default:
-         dialogTitle = 'Statistics';
-         content = [
-           _buildDialogRow('No data available', '', Icons.info, context),
-         ];
+      case 'Quizzes':
+        dialogTitle = 'Quiz Statistics';
+        content = [
+          _buildDialogRow(
+            'Total Quizzes Taken',
+            '${stats.totalQuizzes}',
+            Icons.quiz,
+            context,
+          ),
+          _buildDialogRow(
+            'Average Score',
+            '${stats.avgQuizScore.toStringAsFixed(1)}%',
+            Icons.grade,
+            context,
+          ),
+          _buildDialogRow(
+            'Current Streak',
+            '${stats.streakCount} days',
+            Icons.local_fire_department,
+            context,
+          ),
+          if (stats.latestExamDate != null && stats.latestExamDate!.isNotEmpty)
+            _buildDialogRow(
+              'Next Exam',
+              stats.latestExamDate!,
+              Icons.event,
+              context,
+            ),
+        ];
+        break;
+
+      case 'Planner':
+        dialogTitle = 'Study Plan Progress';
+        content = [
+          _buildDialogRow(
+            'Total Plans',
+            '${stats.totalPlans}',
+            Icons.assignment,
+            context,
+          ),
+          _buildDialogRow(
+            'Completed Plans',
+            '${stats.completedPlans}',
+            Icons.check_circle,
+            context,
+          ),
+          _buildDialogRow(
+            'Incomplete Plans',
+            '${stats.incompletePlans}',
+            Icons.pending,
+            context,
+          ),
+          _buildDialogRow(
+            'Completion Rate',
+            '${stats.totalPlans > 0 ? ((stats.completedPlans / stats.totalPlans) * 100).toStringAsFixed(1) : 0}%',
+            Icons.trending_up,
+            context,
+          ),
+        ];
+        break;
+
+      case 'Goals':
+        dialogTitle = 'Goal Tracking';
+        content = [
+          _buildDialogRow(
+            'Study Streak',
+            '${stats.streakCount} days',
+            Icons.local_fire_department,
+            context,
+          ),
+          _buildDialogRow(
+            'Quiz Average',
+            '${stats.avgQuizScore.toStringAsFixed(1)}%',
+            Icons.grade,
+            context,
+          ),
+          _buildDialogRow(
+            'Plans Completed',
+            '${stats.completedPlans}',
+            Icons.check_circle,
+            context,
+          ),
+          _buildDialogRow(
+            'Recommended Notes',
+            '${stats.recommendedNotes.length}',
+            Icons.lightbulb,
+            context,
+          ),
+        ];
+        break;
+
+      default:
+        dialogTitle = 'Statistics';
+        content = [
+          _buildDialogRow('No data available', '', Icons.info, context),
+        ];
     }
 
     showDialog(
@@ -978,16 +1873,13 @@ class HomeBody extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey[800],
+                  color: const Color(0xFF2D2B4E),
                 ),
               ),
             ],
           ),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: content,
-            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: content),
           ),
           actions: [
             TextButton(
@@ -995,7 +1887,7 @@ class HomeBody extends StatelessWidget {
               child: Text(
                 'Close',
                 style: TextStyle(
-                  color: _getColorForTitle(title),
+                  color: const Color(0xFF6C63FF),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -1006,9 +1898,14 @@ class HomeBody extends StatelessWidget {
     );
   }
 
-  Widget _buildDialogRow(String label, String value, IconData icon, BuildContext context) {
+  Widget _buildDialogRow(
+      String label,
+      String value,
+      IconData icon,
+      BuildContext context,
+      ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -1043,7 +1940,7 @@ class HomeBody extends StatelessWidget {
 
   IconData _getIconForTitle(String title) {
     switch (title) {
-      case 'Completed Quizzes':
+      case 'Quizzes':
         return Icons.quiz;
       case 'Planner':
         return Icons.assignment;
@@ -1056,7 +1953,7 @@ class HomeBody extends StatelessWidget {
 
   Color _getColorForTitle(String title) {
     switch (title) {
-      case 'Completed Quizzes':
+      case 'Quizzes':
         return Colors.blue;
       case 'Planner':
         return Colors.green;
@@ -1067,26 +1964,11 @@ class HomeBody extends StatelessWidget {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = date.difference(now).inDays;
-    
-    if (difference == 0) {
-      return 'Today';
-    } else if (difference == 1) {
-      return 'Tomorrow';
-    } else if (difference > 1) {
-      return 'In $difference days';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-  }
-
   Widget _buildRecommendedResources(
-    BuildContext context,
-    double screenWidth,
-    double screenHeight,
-  ) {
+      BuildContext context,
+      double screenWidth,
+      double screenHeight,
+      ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Consumer<HomeStatsProvider>(
@@ -1187,8 +2069,7 @@ class HomeBody extends StatelessWidget {
 
     final tag = note.tags.isNotEmpty
         ? note.tags[random.nextInt(note.tags.length)]
-        : ["Learning", "Productivity", "Academics", "Wellness", "Future"][random
-              .nextInt(5)];
+        : ["Learning", "Productivity", "Academics", "Wellness", "Future"][random.nextInt(5)];
 
     return Container(
       width: isSmallScreen ? 180 : 220,
@@ -1217,11 +2098,11 @@ class HomeBody extends StatelessWidget {
                 end: Alignment.bottomRight,
                 colors: colors[index % colors.length],
               ),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
-                  color: colors[index % colors.length][0].withOpacity(0.4),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
+                  color: Color(0x1A000000),
+                  blurRadius: 24,
+                  offset: Offset(0, 12),
                 ),
               ],
             ),
@@ -1243,10 +2124,7 @@ class HomeBody extends StatelessWidget {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
@@ -1375,6 +2253,7 @@ class HomeBody extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
+                              color: Color(0xFF2D2B4E),
                             ),
                           ),
                           const Spacer(),
@@ -1385,20 +2264,15 @@ class HomeBody extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // 🔍 search field
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: TextField(
                         onChanged: onChanged,
                         decoration: InputDecoration(
                           hintText: 'Search users by name or email',
                           prefixIcon: const Icon(Icons.search_rounded),
                           filled: true,
-                          fillColor:
-                              Theme.of(context).brightness == Brightness.dark
+                          fillColor: Theme.of(context).brightness == Brightness.dark
                               ? Colors.grey[850]
                               : Colors.grey[100],
                           border: OutlineInputBorder(
@@ -1417,115 +2291,109 @@ class HomeBody extends StatelessWidget {
                       Flexible(
                         child: results.isEmpty && q.isNotEmpty
                             ? Padding(
-                                padding: const EdgeInsets.all(24.0),
-                                child: Text(
-                                  'No users found for "$q"',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'No users found for "$q"',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 12),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.share_rounded),
+                                  label: const Text('Share App'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF6C63FF),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
+                                  onPressed: () {
+                                    Share.share('Check out Mentor AI: $appStoreUrl');
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                            : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: results.length,
+                          itemBuilder: (_, i) {
+                            final u = results[i];
+                            final uid = u['uid'] as String;
+                            final disabled = already.contains(uid);
+                            final checked = selected.contains(uid);
+
+                            return ListTile(
+                              leading: CircleAvatar(
+                                backgroundImage: (u['profilePic'] != null && (u['profilePic'] as String).isNotEmpty)
+                                    ? NetworkImage(u['profilePic'])
+                                    : null,
+                                child: (u['profilePic'] == null || (u['profilePic'] as String).isEmpty)
+                                    ? const Icon(Icons.person)
+                                    : null,
+                              ),
+                              title: Text(u['name'] ?? 'User'),
+                              subtitle: (u['email'] != null && (u['email'] as String).isNotEmpty)
+                                  ? Text(u['email'])
+                                  : null,
+                              trailing: disabled
+                                  ? Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'Shared',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                               )
-                            : ListView.builder(
-                                shrinkWrap: true,
-                                itemCount: results.length,
-                                itemBuilder: (_, i) {
-                                  final u = results[i];
-                                  final uid = u['uid'] as String;
-                                  final disabled = already.contains(uid);
-                                  final checked = selected.contains(uid);
-
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundImage:
-                                          (u['profilePic'] != null &&
-                                              (u['profilePic'] as String)
-                                                  .isNotEmpty)
-                                          ? NetworkImage(u['profilePic'])
-                                          : null,
-                                      child:
-                                          (u['profilePic'] == null ||
-                                              (u['profilePic'] as String)
-                                                  .isEmpty)
-                                          ? const Icon(Icons.person)
-                                          : null,
-                                    ),
-                                    title: Text(u['name'] ?? 'User'),
-                                    subtitle:
-                                        (u['email'] != null &&
-                                            (u['email'] as String).isNotEmpty)
-                                        ? Text(u['email'])
-                                        : null,
-                                    trailing: disabled
-                                        ? Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 10,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Colors.green.withOpacity(
-                                                .15,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                            child: const Text(
-                                              'Shared',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          )
-                                        : Checkbox(
-                                            value: checked,
-                                            onChanged: (v) {
-                                              if (disabled) {
-                                                ScaffoldMessenger.of(
-                                                  context,
-                                                ).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Note already shared with this user',
-                                                    ),
-                                                  ),
-                                                );
-                                                return;
-                                              }
-                                              if (v == true) {
-                                                selected.add(uid);
-                                              } else {
-                                                selected.remove(uid);
-                                              }
-                                              setStateSB(() {});
-                                            },
-                                          ),
-                                    onTap: () {
-                                      if (disabled) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Note already shared with this user',
-                                            ),
-                                          ),
-                                        );
-                                      } else {
-                                        if (checked) {
-                                          selected.remove(uid);
-                                        } else {
-                                          selected.add(uid);
-                                        }
-                                        setStateSB(() {});
-                                      }
-                                    },
-                                  );
+                                  : Checkbox(
+                                value: checked,
+                                onChanged: (v) {
+                                  if (disabled) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Note already shared with this user')),
+                                    );
+                                    return;
+                                  }
+                                  if (v == true) {
+                                    selected.add(uid);
+                                  } else {
+                                    selected.remove(uid);
+                                  }
+                                  setStateSB(() {});
                                 },
                               ),
+                              onTap: () {
+                                if (disabled) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Note already shared with this user')),
+                                  );
+                                } else {
+                                  if (checked) {
+                                    selected.remove(uid);
+                                  } else {
+                                    selected.add(uid);
+                                  }
+                                  setStateSB(() {});
+                                }
+                              },
+                            );
+                          },
+                        ),
                       ),
                     const SizedBox(height: 8),
-
-                    // ✅ Share button with credit deduction
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       child: SizedBox(
@@ -1533,47 +2401,44 @@ class HomeBody extends StatelessWidget {
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.send_rounded),
                           label: const Text('Share'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF6C63FF),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 3,
+                          ),
                           onPressed: selected.isEmpty
                               ? null
                               : () async {
-                                  await CreditsService.confirmAndDeductCredits(
-                                    context: context,
-                                    cost: CreditsConfig.shareNote,
-                                    actionName: "Share Notes",
-                                    onConfirmedAction: () async {
-                                      final (added, alreadyDup) = await provider
-                                          .shareNoteWithUsers(
-                                            note: note,
-                                            targetUids: selected.toList(),
-                                          );
+                            await CreditsService.confirmAndDeductCredits(
+                              context: context,
+                              cost: CreditsConfig.shareNote,
+                              actionName: "Share Notes",
+                              onConfirmedAction: () async {
+                                final (added, alreadyDup) = await provider.shareNoteWithUsers(
+                                  note: note,
+                                  targetUids: selected.toList(),
+                                );
 
-                                      if (alreadyDup.isNotEmpty) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Already shared with: ${alreadyDup.length} user(s)',
-                                            ),
-                                          ),
-                                        );
-                                      }
-                                      if (added.isNotEmpty) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Shared with ${added.length} user(s) 🎉 -${CreditsConfig.shareNote} credits',
-                                            ),
-                                            backgroundColor: Colors.green,
-                                          ),
-                                        );
-                                      }
-                                      Navigator.pop(context);
-                                    },
+                                if (alreadyDup.isNotEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Already shared with: ${alreadyDup.length} user(s)')),
                                   );
-                                },
+                                }
+                                if (added.isNotEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Shared with ${added.length} user(s) 🎉 -${CreditsConfig.shareNote} credits'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
                         ),
                       ),
                     ),

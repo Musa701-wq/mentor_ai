@@ -2,6 +2,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:student_ai/config/app_links.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../Providers/notesProvider.dart';
 import '../../models/notesModel.dart';
@@ -476,15 +478,32 @@ class _SharedNotesScreenState extends State<SharedNotesScreen> {
                       Flexible(
                         child: results.isEmpty && q.isNotEmpty
                             ? Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: Text(
-                            'No users found for "$q"',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        )
+                                padding: const EdgeInsets.all(24.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'No users found for "$q"',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton.icon(
+                                        icon: const Icon(Icons.share_rounded),
+                                        label: const Text('Share App'),
+                                        onPressed: () {
+                                          Share.share('Check out Mentor AI: ' + appStoreUrl);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
                             : ListView.builder(
                           shrinkWrap: true,
                           itemCount: results.length,

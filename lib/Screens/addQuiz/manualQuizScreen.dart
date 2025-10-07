@@ -348,6 +348,7 @@ class _ManualQuizScreenState extends State<ManualQuizScreen>
     return Consumer<QuizProvider>(
       builder: (context, quizProvider, _) {
         return Scaffold(
+          resizeToAvoidBottomInset: true,
           appBar: AppBar(
             title: const Text(
               "Create Quiz",
@@ -385,7 +386,12 @@ class _ManualQuizScreenState extends State<ManualQuizScreen>
                       padding: const EdgeInsets.all(16),
                       child: _totalQuestions == null
                           ? Center(child: _buildQuestionNumberSelector())
-                          : Column(
+                          : SingleChildScrollView(
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.only(
+                        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                      ),
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Quiz Title
@@ -483,10 +489,10 @@ class _ManualQuizScreenState extends State<ManualQuizScreen>
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Expanded(
-                          child: ListView(
-                            children: List.generate(4, (i) => _buildOptionField(i)),
-                          ),
+                        ListView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: List.generate(4, (i) => _buildOptionField(i)),
                         ),
                         const SizedBox(height: 20),
 
@@ -540,7 +546,7 @@ class _ManualQuizScreenState extends State<ManualQuizScreen>
               ),
 
               // Confetti animation
-              if (_showConfetti)
+                ),if (_showConfetti)
                 Align(
                   alignment: Alignment.topCenter,
                   child: ConfettiWidget(

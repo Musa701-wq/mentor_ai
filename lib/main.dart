@@ -18,6 +18,8 @@ import 'Providers/profileProvider.dart';
 import 'Providers/studyPlannerProvider.dart';
 import 'Screens/authwrapper.dart';
 import 'firebase_options.dart'; // Make sure you have this generated
+import 'routes.dart';
+import 'utils/app_navigator.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,12 +28,12 @@ void main() async {
   );
   await AdService.init();
 
-  Future.microtask(() async {
-    final iapService = IAPService();
-    await iapService.init();
-    await iapService.verifyMonthlySubscription(); // 🔹 verify subscription on app start
-
-  });
+  // Future.microtask(() async {
+  //   final iapService = IAPService();
+  //   await iapService.init();
+  //   await iapService.verifyMonthlySubscription(); // 🔹 verify subscription on app start
+  //
+  // });
 
   runApp(const MyApp());
 }
@@ -69,6 +71,8 @@ class MyApp extends StatelessWidget {
         title: 'Mentor AI App',
         theme: ThemeData.light(),         // Light theme
         themeMode: ThemeMode.light,
+        navigatorKey: AppNavigator.key,
+        navigatorObservers:  [routeObserver],
         home: const SplashWrapper(),
       ),
     );

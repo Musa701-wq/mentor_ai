@@ -224,8 +224,8 @@ class _StudyPlanCardState extends State<StudyPlanCard> {
 
               const SizedBox(height: 20),
 
-              // ✅ Only show "Mark as Complete" if not already completed
-              if (!isCompleted)
+              // ✅ Only show "Mark as Complete" if not completed and start date is not in the future
+              if (!isCompleted && !_isStartDateInFuture())
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -361,72 +361,76 @@ class _StudyPlanCardState extends State<StudyPlanCard> {
             final topicName = t["name"] ?? "Unnamed Topic";
             final estTime = t["estimatedTime"] ?? 1;
             final assignedDays = (t["assignedDays"] as List?) ?? [];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.book_rounded,
-                        size: 16,
-                        color: Colors.blue.shade600,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          topicName,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
+            return InkWell(
+              onTap: () => _showTopicDialog(t),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.book_rounded,
+                          size: 16,
+                          color: Colors.blue.shade600,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            topicName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      Text(
-                        "${estTime}h",
-                        style: TextStyle(
-                          color: secondaryTextColor,
-                          fontWeight: FontWeight.w500,
+                        Text(
+                          "${estTime}h",
+                          style: TextStyle(
+                            color: secondaryTextColor,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  if (assignedDays.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: assignedDays
-                          .map(
-                            (day) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                day,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blue.shade600,
+                      ],
+                    ),
+                    if (assignedDays.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: assignedDays
+                            .map(
+                              (day) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  day,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade600,
+                                  ),
                                 ),
                               ),
-                            ),
-                          )
-                          .toList(),
-                    ),
+                            )
+                            .toList(),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             );
           })),
@@ -458,54 +462,58 @@ class _StudyPlanCardState extends State<StudyPlanCard> {
             final day = s["day"];
             final topics = (s["topics"] as List).join(', ');
             final hours = s["hours"];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 16,
-                    color: Colors.green.shade600,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          day,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: textColor,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          topics,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: secondaryTextColor,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    "$hours h",
-                    style: TextStyle(
+            return InkWell(
+              onTap: () => _showScheduleItemDialog(s),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
                       color: Colors.green.shade600,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            day,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: textColor,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            topics,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: secondaryTextColor,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "$hours h",
+                      style: TextStyle(
+                        color: Colors.green.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           })),
@@ -530,29 +538,33 @@ class _StudyPlanCardState extends State<StudyPlanCard> {
         if (showReminders) ...[
           const SizedBox(height: 12),
           ...((plan["reminders"] as List).map(
-            (r) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.notification_important_rounded,
-                    size: 16,
-                    color: Colors.orange.shade600,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      r,
-                      style: TextStyle(color: textColor),
-                      overflow: TextOverflow.ellipsis,
+            (r) => InkWell(
+              onTap: () => _showReminderDialog(r),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.notification_important_rounded,
+                      size: 16,
+                      color: Colors.orange.shade600,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        r,
+                        style: TextStyle(color: textColor),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           )),
@@ -615,5 +627,108 @@ class _StudyPlanCardState extends State<StudyPlanCard> {
     } catch (e) {
       return dateString.split('T').first;
     }
+  }
+
+  void _showTopicDialog(Map<String, dynamic> t) {
+    final topicName = t["name"] ?? "Unnamed Topic";
+    final estTime = t["estimatedTime"] ?? 1;
+    final assignedDays = (t["assignedDays"] as List?) ?? [];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(topicName),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Estimated time: ${estTime}h"),
+              const SizedBox(height: 8),
+              if (assignedDays.isNotEmpty) ...[
+                const Text("Assigned days:"),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: assignedDays
+                      .map(
+                        (day) => Chip(
+                          label: Text(day.toString()),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      )
+                      .toList(),
+                ),
+              ] else ...[
+                const Text("No assigned days"),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showScheduleItemDialog(Map<String, dynamic> s) {
+    final day = s["day"]?.toString() ?? "Day";
+    final topics = ((s["topics"] as List?) ?? [])
+        .map((e) => e.toString())
+        .toList();
+    final hours = s["hours"]?.toString() ?? "0";
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text("Study Day: $day"),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text("Hours: $hours h"),
+              const SizedBox(height: 8),
+              const Text("Topics:"),
+              const SizedBox(height: 6),
+              if (topics.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: topics.map((t) => Text("• $t")).toList(),
+                )
+              else
+                const Text("No topics listed"),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReminderDialog(String r) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Reminder"),
+        content: Text(r),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }

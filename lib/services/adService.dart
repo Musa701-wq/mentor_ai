@@ -61,6 +61,34 @@ class AdService {
     )..load();
   }
 
+
+  static BannerAd? createBannerAd() {
+    if (isPro) return null;
+
+    try {
+      return BannerAd(
+        size: AdSize.banner,
+        adUnitId: "ca-app-pub-3774337907915828/1061049500",
+        listener: BannerAdListener(
+          onAdLoaded: (Ad ad) => print('Banner ad loaded.'),
+          onAdFailedToLoad: (Ad ad, LoadAdError error) {
+            print('Banner ad failed to load: $error');
+            ad.dispose();
+          },
+        ),
+        request: const AdRequest(),
+      )..load();
+    } catch (e) {
+      print("Error creating banner ad: $e");
+      return null;
+    }
+  }
+
+  static void disposeBannerAd() {
+    bannerAd?.dispose();
+    bannerAd = null;
+  }
+
   static Future<void> showInterstitialAndNavigate(
       BuildContext context,
       Widget targetScreen,
@@ -104,7 +132,7 @@ class AdService {
     bool rewardEarned = false; // track reward
 
     RewardedAd.load(
-      adUnitId: "ca-app-pub-3940256099942544/1712485313", // TODO replace
+      adUnitId: "ca-app-pub-3774337907915828/4113205367", // TODO replace
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (RewardedAd ad) {

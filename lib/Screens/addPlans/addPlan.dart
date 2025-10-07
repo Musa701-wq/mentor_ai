@@ -139,6 +139,7 @@ class _AiPlannerScreenState extends State<AiPlannerScreen>
     return Consumer2<StudyPlannerProvider, NotesProvider>(
       builder: (context, plannerProvider, notesProvider, _) {
         return CupertinoPageScaffold(
+          resizeToAvoidBottomInset: true,
           navigationBar: CupertinoNavigationBar(
             middle: const Text("AI Study Planner"),
             backgroundColor: isDark ? null : Colors.white,

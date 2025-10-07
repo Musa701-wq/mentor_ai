@@ -51,6 +51,7 @@ dependencies:
   doc_text:
   intl:
   url_launcher:
+  share_plus: ^7.0.0
   confetti:
   lottie:
   in_app_purchase:

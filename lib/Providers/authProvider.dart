@@ -23,7 +23,27 @@ class authProvider1 with ChangeNotifier {
         // Fetch user profile from Firestore
         userModel = await _firestoreService.getUserProfile(user.uid);
 
-        // Update ProfileProvider
+        // If no profile exists (new account), create and persist a default profile
+        if (userModel == null) {
+          final created = UserModel(
+            uid: user.uid,
+            email: user.email ?? '',
+            name: user.displayName ?? '',
+            grade: '',
+            goal: '',
+            subjects: const [],
+            profilePic: user.photoURL ?? '',
+            createdAt: DateTime.now(),
+            lastLogin: DateTime.now(),
+            onboardingCompleted: false,
+            keywords: const [],
+            credits: 500,
+          );
+          await _firestoreService.saveUserProfile(created);
+          userModel = created;
+        }
+
+        // Update ProfileProvider safely
         _profileProvider.setUser(userModel!);
       } else {
         userModel = null;

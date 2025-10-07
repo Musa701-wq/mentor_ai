@@ -46,12 +46,37 @@ class OnboardingAuth extends StatelessWidget {
           final existingUser = snapshot.data;
 
           if (existingUser != null) {
-            // Profile exists → skip onboarding
-            Future.microtask(() {
-              Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const HomeScreen()));
-            });
-            return const Scaffold(); // placeholder
+            if (existingUser.onboardingCompleted) {
+              // Existing profile completed → go home
+              Future.microtask(() {
+                Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const HomeScreen()));
+              });
+              return const Scaffold();
+            } else {
+              // Existing profile incomplete → update with onboarding data
+              Future.microtask(() async {
+                final updatedUser = UserModel(
+                  uid: user.uid,
+                  email: user.email ?? existingUser.email,
+                  name: name.isNotEmpty ? name : existingUser.name,
+                  grade: grade.isNotEmpty ? grade : existingUser.grade,
+                  goal: goal.isNotEmpty ? goal : existingUser.goal,
+                  subjects: subjects.isNotEmpty ? subjects : existingUser.subjects,
+                  profilePic: user.photoURL ?? existingUser.profilePic,
+                  createdAt: existingUser.createdAt ?? DateTime.now(),
+                  lastLogin: DateTime.now(),
+                  onboardingCompleted: true,
+                  keywords: generateKeywords(name.isNotEmpty ? name : existingUser.name, user.email ?? existingUser.email),
+                  credits: existingUser.credits,
+                );
+                await firestoreService.saveUserProfile(updatedUser);
+
+                Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const HomeScreen()));
+              });
+              return const Scaffold();
+            }
           }
 
           // Firebase user exists but Firestore profile missing → create profile
@@ -67,7 +92,7 @@ class OnboardingAuth extends StatelessWidget {
               createdAt: DateTime.now(),
               lastLogin: DateTime.now(),
               onboardingCompleted: true,
-              keywords: generateKeywords(name, user.email as String),
+              keywords: generateKeywords(name, user.email ?? ''),
             );
             await firestoreService.saveUserProfile(newUser);
 
@@ -75,7 +100,7 @@ class OnboardingAuth extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const HomeScreen()));
           });
 
-          return const Scaffold(); // placeholder while creating profile
+          return const Scaffold(); // placeholder while creating/updating profile
         },
       );
     }

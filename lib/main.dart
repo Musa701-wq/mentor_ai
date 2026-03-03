@@ -1,4 +1,5 @@
 // lib/main.dart
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +8,8 @@ import 'package:student_ai/SplashScreen.dart';
 import 'package:student_ai/services/Firestore_service.dart';
 import 'package:student_ai/services/IAPService.dart';
 import 'package:student_ai/services/adService.dart';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:flutter/foundation.dart';
 import 'package:student_ai/services/geminiService.dart';
 import 'package:student_ai/splashWrapper.dart';
 import 'Providers/authProvider.dart';
@@ -20,13 +23,18 @@ import 'Screens/authwrapper.dart';
 import 'firebase_options.dart'; // Make sure you have this generated
 import 'routes.dart';
 import 'utils/app_navigator.dart';
+final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // Request App Tracking Transparency authorization on iOS before initializing ads
+  await _requestATTIfNeeded();
   await AdService.init();
+  await analytics.logEvent(name: 'debug_view_test');
+  print('📊 Logged debug_view_test event for DebugView');
 
   // Future.microtask(() async {
   //   final iapService = IAPService();
@@ -36,6 +44,19 @@ void main() async {
   // });
 
   runApp(const MyApp());
+}
+
+Future<void> _requestATTIfNeeded() async {
+  if (defaultTargetPlatform == TargetPlatform.iOS) {
+    try {
+      final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+      if (status == TrackingStatus.notDetermined) {
+        await AppTrackingTransparency.requestTrackingAuthorization();
+      }
+    } catch (e) {
+      debugPrint('ATT request failed: $e');
+    }
+  }
 }
 
 class MyApp extends StatelessWidget {

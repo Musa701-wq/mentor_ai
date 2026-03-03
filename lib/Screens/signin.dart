@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 
 import '../Providers/authProvider.dart';
 import '../widgets/SignInButton.dart';
@@ -13,23 +15,116 @@ class SignInPage extends StatelessWidget {
     final authProvider = Provider.of<authProvider1>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    String _friendlyErrorMessage(Object e) {
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'account-exists-with-different-credential':
+            return 'Use the sign-in method previously used for this email.';
+          case 'invalid-credential':
+            return 'Invalid sign-in. Please try again.';
+          case 'user-disabled':
+            return 'Account disabled. Please contact support.';
+          case 'operation-not-allowed':
+            return 'Sign-in method not enabled. Please contact support.';
+          case 'network-request-failed':
+            return 'Network error. Check your connection and try again.';
+          case 'too-many-requests':
+            return 'Too many attempts. Please wait and try again.';
+          case 'web-context-canceled':
+          case 'popup-closed-by-user':
+            return '';
+          default:
+            return 'Sign in Cancelled. Please try again.';
+        }
+      }
+
+      if (e is PlatformException) {
+        switch (e.code) {
+          case 'sign_in_canceled':
+          case 'popup_closed_by_user':
+            return '';
+          case 'network_error':
+            return 'Network error. Check your connection and try again.';
+          default:
+            break;
+        }
+      }
+
+      final msg = e.toString().toLowerCase();
+      if (msg.contains('cancel')) return '';
+      if (msg.contains('network') || msg.contains('timeout')) {
+        return 'Network error. Check your connection and try again.';
+      }
+      if (msg.contains('different-credential')) {
+        return 'Use the sign-in method previously used for this email.';
+      }
+      return '';
+    }
+
     Future<void> _handleLogin(Future<void> Function() loginFn) async {
       try {
         await loginFn();
-      } catch (e, stack) {
-        debugPrint("❌ Sign in failed: $e\n$stack");
+
+        // Optional: log basic user info for debugging post sign-in
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          debugPrint('✅ Signed in: uid=${user.uid}, email=${user.email}, name=${user.displayName}');
+        }
+      } on UnsupportedError catch (e, stack) {
+        // Provide clearer feedback when Apple sign-in is used on unsupported platforms
+        debugPrint("⚠️ Unsupported platform for Apple Sign-In: $e\n$stack");
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              duration: Duration(minutes: 10),
-              content: Text('Sign in failed. Please try again. $e'),
-              backgroundColor: Colors.red.shade600,
+              duration: const Duration(seconds: 3),
+              content: const Text('Apple Sign-In is only supported on iOS and macOS.'),
+              backgroundColor: Colors.orange.shade700,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
           );
+        }
+      } on FirebaseAuthException catch (e, stack) {
+        debugPrint("❌ FirebaseAuth sign in failed: ${e.code} ${e.message}\n$stack");
+        if (context.mounted) {
+          final message = _friendlyErrorMessage(e).trim();
+
+          if (message.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                duration: const Duration(seconds: 3),
+                content: Text(message),
+                backgroundColor: Colors.red.shade600,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+
+        }
+      } catch (e, stack) {
+        debugPrint("❌ Sign in failed: $e\n$stack");
+        if (context.mounted) {
+          final message = _friendlyErrorMessage(e).trim();
+
+          if (message.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                duration: const Duration(seconds: 3),
+                content: Text(message),
+                backgroundColor: Colors.red.shade600,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            );
+          }
+          ;
         }
       }
     }

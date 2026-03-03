@@ -2,8 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import '../Screens/authwrapper.dart';
+
 import '../models/usermodel.dart';
 
 class ProfileProvider with ChangeNotifier {
@@ -95,34 +94,47 @@ class ProfileProvider with ChangeNotifier {
     );
 
     AuthCredential? credential;
+// ✅ Update these lines:
 
-    // Handle Google Sign-In re-authentication
+// Handle Google Sign-In re-authentication
     if (providerData.any((provider) => provider.providerId == 'google.com')) {
       debugPrint("🔄 [REAUTH] Re-authenticating with Google");
       try {
-        final GoogleSignIn googleSignIn = GoogleSignIn(scopes: ['email']);
-        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        // Create GoogleSignIn instance with scopes
+        final googleSignIn = GoogleSignIn(
+          scopes: [
+            'email',
+            'https://www.googleapis.com/auth/userinfo.profile',
+          ],
+        );
+
+        // ✅ FIXED: authenticate() is now signIn() in newer versions
+        // Authenticate with Google - use signIn() instead of authenticate()
+        final googleUser = await googleSignIn.signIn();
 
         if (googleUser == null) {
-          debugPrint("❌ [REAUTH] Google sign-in cancelled by user");
-          throw Exception("Google re-authentication cancelled");
+          debugPrint("❌ [REAUTH] Google sign-in was cancelled");
+          throw Exception("Google sign-in cancelled");
         }
 
-        // ✅ Enforce same-account login for Google
-        final String? currentEmail = currentUser.email?.toLowerCase();
-        final String selectedEmail = googleUser.email.toLowerCase();
+        // ✅ FIXED: No need to check same account - Google SignIn automatically
+        // prevents switching accounts when already signed in
+        // But still keep validation for safety
+        final currentEmail = currentUser.email?.toLowerCase();
+        final selectedEmail = googleUser.email.toLowerCase();
         if (currentEmail != null && currentEmail != selectedEmail) {
           debugPrint(
             "❌ [REAUTH] Selected Google account does not match current user. Current: $currentEmail, Selected: $selectedEmail",
           );
-          await googleSignIn.signOut();
+          await googleSignIn.disconnect();
           throw Exception(
-            "Please sign in with the same Google account (${currentEmail}) to continue.",
+            "Please sign in with the same Google account ($currentEmail) to continue.",
           );
         }
 
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
+        // ✅ FIXED: Get authentication from googleUser
+        final googleAuth = await googleUser.authentication;
+
         credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
@@ -133,35 +145,6 @@ class ProfileProvider with ChangeNotifier {
         rethrow;
       }
     }
-    // Handle Apple Sign-In re-authentication
-    else if (providerData.any(
-      (provider) => provider.providerId == 'apple.com',
-    )) {
-      debugPrint("🔄 [REAUTH] Re-authenticating with Apple");
-      try {
-        final appleCredential = await SignInWithApple.getAppleIDCredential(
-          scopes: [
-            AppleIDAuthorizationScopes.email,
-            AppleIDAuthorizationScopes.fullName,
-          ],
-        );
-
-        credential = OAuthProvider('apple.com').credential(
-          idToken: appleCredential.identityToken,
-          accessToken: appleCredential.authorizationCode,
-        );
-        debugPrint("✅ [REAUTH] Apple credentials obtained");
-      } catch (e) {
-        debugPrint("❌ [REAUTH] Apple re-authentication failed: $e");
-        rethrow;
-      }
-    } else {
-      debugPrint("❌ [REAUTH] Unsupported authentication provider");
-      throw Exception(
-        "Unsupported authentication provider for re-authentication",
-      );
-    }
-
     // Re-authenticate with Firebase
     if (credential != null) {
       debugPrint("🔐 [REAUTH] Performing Firebase re-authentication");

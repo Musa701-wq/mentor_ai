@@ -5,6 +5,7 @@ import 'package:in_app_review/in_app_review.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/IAPService.dart';
 import '../../services/adService.dart';
@@ -25,6 +26,8 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
   bool _showFullScreenLoading = false;
   bool _isWatchingAd = false;
   StreamSubscription? _creditsSubscription;
+  static const String _privacyUrl = 'https://vectorlabzlimited.com/privacy-policy/';
+  static const String _termsUrl = 'https://vectorlabzlimited.com/terms-of-use/';
 
   @override
   void initState() {
@@ -116,6 +119,16 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
       _inAppReview.requestReview();
     } else {
       _inAppReview.openStoreListing();
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open link')),
+      );
     }
   }
 
@@ -357,7 +370,15 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
                     
                     // Subscription Section
                     _buildSubscriptionSection(iapService, screenWidth, screenHeight),
-                    
+                    SizedBox(height: screenHeight * 0.03),
+
+                    Center(
+                      child: TextButton(onPressed: (){
+                        _iapService.restore();
+                      }, child: Text('Restore Purchase')),
+                    ),
+
+                    SizedBox(height: screenHeight * 0.03),
                     // Credits Section
                     Text(
                       'Buy Credits',
@@ -406,6 +427,42 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
                   childCount: iapService.products
                       .where((p) => IAPService.creditIds.contains(p.id))
                       .length,
+                ),
+              ),
+            ),
+
+            // Legal Section in body
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                child: Column(
+                  children: [
+                    SizedBox(height: screenHeight * 0.02),
+                    Center(
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 16,
+                        runSpacing: 8,
+                        children: [
+                          TextButton(
+                            onPressed: () => _launchUrl(_privacyUrl),
+                            style: TextButton.styleFrom(
+                              foregroundColor: isDark ? Colors.white : Colors.black,
+                            ),
+                            child: const Text('Privacy Policy'),
+                          ),
+                          TextButton(
+                            onPressed: () => _launchUrl(_termsUrl),
+                            style: TextButton.styleFrom(
+                              foregroundColor: isDark ? Colors.white : Colors.black,
+                            ),
+                            child: const Text('Terms of Use'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: screenHeight * 0.02),
+                  ],
                 ),
               ),
             ),

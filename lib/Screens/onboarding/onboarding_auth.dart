@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../Providers/authProvider.dart';
+import '../../Providers/homeStatsProvider.dart';
 import '../../models/usermodel.dart';
 import '../../services/Firestore_service.dart';
 
@@ -48,7 +49,9 @@ class OnboardingAuth extends StatelessWidget {
           if (existingUser != null) {
             if (existingUser.onboardingCompleted) {
               // Existing profile completed → go home
-              Future.microtask(() {
+              Future.microtask(() async {
+                final provider = Provider.of<HomeStatsProvider>(context, listen: false);
+                await provider.loadDashboard();
                 Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const HomeScreen()));
               });
@@ -71,7 +74,8 @@ class OnboardingAuth extends StatelessWidget {
                   credits: existingUser.credits,
                 );
                 await firestoreService.saveUserProfile(updatedUser);
-
+                final provider = Provider.of<HomeStatsProvider>(context, listen: false);
+                await provider.loadDashboard();
                 Navigator.of(context).pushReplacement(
                     MaterialPageRoute(builder: (_) => const HomeScreen()));
               });
@@ -81,10 +85,11 @@ class OnboardingAuth extends StatelessWidget {
 
           // Firebase user exists but Firestore profile missing → create profile
           Future.microtask(() async {
+            final effectiveName = name.isNotEmpty ? name : (user.displayName ?? '');
             final newUser = UserModel(
               uid: user.uid,
               email: user.email ?? '',
-              name: name,
+              name: effectiveName,
               grade: grade,
               goal: goal,
               subjects: subjects,
@@ -92,10 +97,11 @@ class OnboardingAuth extends StatelessWidget {
               createdAt: DateTime.now(),
               lastLogin: DateTime.now(),
               onboardingCompleted: true,
-              keywords: generateKeywords(name, user.email ?? ''),
+              keywords: generateKeywords(effectiveName, user.email ?? ''),
             );
             await firestoreService.saveUserProfile(newUser);
-
+            final provider = Provider.of<HomeStatsProvider>(context, listen: false);
+            await provider.loadDashboard();
             Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (_) => const HomeScreen()));
           });

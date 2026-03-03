@@ -16,10 +16,10 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 2.0.2+3
 
 environment:
-  sdk: ^3.8.1
+  sdk: ">=3.0.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -31,38 +31,45 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  firebase_core: ^3.6.0
-  firebase_auth: ^5.3.1
-  cloud_firestore: ^5.4.2
-  google_sign_in: ^6.2.1
-  sign_in_with_apple: ^6.1.0
-  provider: ^6.1.2
-  font_awesome_flutter: ^10.7.0
-  smooth_page_indicator: ^1.0.0+2
-  image_picker: ^0.8.7+4
-  file_picker: ^5.2.5
-  http: ^0.13.6
-  google_mlkit_text_recognition: 0.15.0
-  uuid: ^4.2.1
-  pdf_text:
-  doc_text:
-  intl:
-  url_launcher:
-  share_plus: ^7.0.0
-  confetti:
-  lottie:
-  in_app_purchase:
-  in_app_review:
-  google_mobile_ads:
-  firebase_analytics:
+  firebase_core: ^4.3.0
+  firebase_auth: ^6.1.3
+  cloud_firestore: ^6.1.1
+  google_sign_in: ^6.1.5
+  sign_in_with_apple: ^7.0.1
+  provider: ^6.1.5+1
+  font_awesome_flutter: ^10.12.0
+  smooth_page_indicator: ^2.0.1
+  image_picker: ^1.2.1
+  file_picker: ^10.3.8
+  http: ^1.6.0
+  google_mlkit_text_recognition: ^0.15.0
+  uuid: ^4.5.2
+  doc_text: ^0.0.1
+  pdf: ^3.10.8
+  intl: ^0.20.2
+  url_launcher: ^6.3.2
+  share_plus: ^12.0.1
+  confetti: ^0.8.0
+  lottie: ^3.3.2
+  in_app_purchase: ^3.2.3
+  in_app_review: ^2.0.11
+  google_mobile_ads: ^7.0.0
+  firebase_analytics: ^12.1.0
+  app_tracking_transparency: ^2.0.6+1
+
+
+
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
-
+flutter_icons:
+  ios: true
+  android: true
+  image_path: "assets/1.png" # path to your logo
+  remove_alpha_ios: true
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -86,6 +93,7 @@ flutter:
      - assets/fallback.png
      - assets/quiz.png
      - assets/success.json
+     - assets/1.png
 
   #   - images/a_dot_ham.jpeg
 

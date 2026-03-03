@@ -57,10 +57,11 @@ class _AiPlannerScreenState extends State<AiPlannerScreen>
             Container(
               height: 180,
               child: CupertinoDatePicker(
-                initialDateTime: isExamDate ? _examDate : _startDate ?? now,
+                initialDateTime: isExamDate
+                    ? (_examDate ?? (_startDate ?? now))
+                    : (_startDate ?? now),
                 mode: CupertinoDatePickerMode.date,
-                minimumDate: now,
-                maximumDate: DateTime(now.year + 1),
+                minimumDate: isExamDate ? (_startDate ?? now) : now,
                 onDateTimeChanged: (date) {
                   setState(() {
                     if (isExamDate) {
@@ -98,6 +99,22 @@ class _AiPlannerScreenState extends State<AiPlannerScreen>
           ],
         ),
       );
+      return;
+    }
+
+    // Validate that exam date is strictly after preparation start date
+    if (!_examDate!.isAfter(_startDate!)) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => const CupertinoAlertDialog(
+          title: Text('Invalid Dates'),
+          content: Text('Exam date must be after the preparation start date.'),
+        ),
+      );
+      await Future.delayed(const Duration(milliseconds: 300));
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
       return;
     }
 

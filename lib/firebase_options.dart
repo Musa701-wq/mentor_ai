@@ -59,20 +59,20 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDOZgDEnlyBCFB0fdF6JMAuTIcljwMAojQ',
-    appId: '1:615602997008:ios:c1dfbeb7a7f92c95ca4795',
-    messagingSenderId: '615602997008',
-    projectId: 'studentai-dbf06',
-    storageBucket: 'studentai-dbf06.firebasestorage.app',
-    iosBundleId: 'com.example.studentAi',
+    apiKey: 'AIzaSyB84j6_p24iKCOu1ywFypUJfU5zz_WyKuI',
+    appId: '1:565508297515:ios:332fdf56fd6b993837ab6e',
+    messagingSenderId: '565508297515',
+    projectId: 'mentorai-2afce',
+    storageBucket: 'mentorai-2afce.firebasestorage.app',
+    iosBundleId: 'com.vectorlabs.mentorai',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDOZgDEnlyBCFB0fdF6JMAuTIcljwMAojQ',
-    appId: '1:615602997008:ios:c1dfbeb7a7f92c95ca4795',
-    messagingSenderId: '615602997008',
-    projectId: 'studentai-dbf06',
-    storageBucket: 'studentai-dbf06.firebasestorage.app',
+    apiKey: 'AIzaSyB84j6_p24iKCOu1ywFypUJfU5zz_WyKuI',
+    appId: '1:565508297515:ios:6105734f31fc3ac237ab6e',
+    messagingSenderId: '565508297515',
+    projectId: 'mentorai-2afce',
+    storageBucket: 'mentorai-2afce.firebasestorage.app',
     iosBundleId: 'com.example.studentAi',
   );
 

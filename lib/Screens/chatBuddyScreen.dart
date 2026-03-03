@@ -2,8 +2,10 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../Providers/chatProvider.dart';
+import '../Screens/AuthWrapper.dart';
 
 class ChatBuddyScreen extends StatefulWidget {
   const ChatBuddyScreen({super.key});
@@ -18,6 +20,8 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
   final ScrollController _scrollController = ScrollController();
   late final FocusNode _focusNode;
   late final AnimationController _dotsController;
+  User? _currentUser;
+  bool _isCheckingAuth = true;
 
   @override
   void initState() {
@@ -29,9 +33,47 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
       duration: const Duration(milliseconds: 1000),
     )..repeat();
 
+    _checkAuthStatus();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom(animated: false);
     });
+  }
+
+  // Check authentication status from Firebase Auth
+  void _checkAuthStatus() {
+    _currentUser = FirebaseAuth.instance.currentUser;
+    setState(() {
+      _isCheckingAuth = false;
+    });
+  }
+
+  // Listen to auth state changes
+  void _setupAuthListener() {
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _isCheckingAuth = false;
+        });
+      }
+    });
+  }
+
+  // Navigate to AuthWrapper
+  void _navigateToAuth() {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => AuthWrapper(isHome: true),
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _setupAuthListener();
   }
 
   @override
@@ -99,23 +141,23 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
                 ? Text(
               text,
               style: TextStyle(
-                color: isUser ? Colors.white : Colors.black87,
-                fontSize: 15,
-                decoration: TextDecoration.none,
-                fontWeight: FontWeight.normal
+                  color: isUser ? Colors.white : Colors.black87,
+                  fontSize: 15,
+                  decoration: TextDecoration.none,
+                  fontWeight: FontWeight.normal
               ),
             )
                 : TypingText(
               text: text,
               style: const TextStyle(
-                color: Colors.black87,
-                fontSize: 15,
-                decoration: TextDecoration.none,
-                fontWeight: FontWeight.normal
+                  color: Colors.black87,
+                  fontSize: 15,
+                  decoration: TextDecoration.none,
+                  fontWeight: FontWeight.normal
               ),
               speed: const Duration(milliseconds: 30),
-              onCharTyped: _scrollToBottom, // scroll after each character
-              onComplete: _scrollToBottom, // refresh to mark complete
+              onCharTyped: _scrollToBottom,
+              onComplete: _scrollToBottom,
             ),
           ),
         ),
@@ -129,7 +171,6 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
       ],
     );
   }
-
 
   /// Animated typing dots
   Widget _buildTypingDots() {
@@ -223,8 +264,131 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
     );
   }
 
+  /// Login/Signup Prompt Screen
+  Widget _buildLoginPrompt() {
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        leading: CupertinoNavigationBarBackButton(
+          onPressed: () => Navigator.pop(context),
+        ),
+        middle: const Text(
+          "Study Buddy",
+          style: TextStyle(fontSize: 18),
+        ),
+        backgroundColor: Colors.white,
+      ),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline,
+                        size: 80,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        "Join the Conversation",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                          decoration: TextDecoration.none
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "Login to start chatting with your AI Study Buddy and get personalized help with your studies",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.black54,
+                            decoration: TextDecoration.none
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton(
+                          onPressed: _navigateToAuth,
+                          color: const Color(0xFF5E35B1),
+                          child: const Text(
+                            "Login to Continue",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      SizedBox(
+                        width: double.infinity,
+                        child: CupertinoButton(
+                          onPressed: _navigateToAuth,
+                          color: Colors.grey[200],
+                          child: const Text(
+                            "Create Account",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF5E35B1),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Loading screen while checking auth status
+  Widget _buildLoadingScreen() {
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        leading: CupertinoNavigationBarBackButton(
+          onPressed: () => Navigator.pop(context),
+        ),
+        middle: const Text(
+          "Study Buddy",
+          style: TextStyle(fontSize: 18),
+        ),
+        backgroundColor: Colors.white,
+      ),
+      child: const SafeArea(
+        child: Center(
+          child: CupertinoActivityIndicator(),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Show loading screen while checking auth status
+    if (_isCheckingAuth) {
+      return _buildLoadingScreen();
+    }
+
+    // Show login prompt if not logged in
+    if (_currentUser == null) {
+      return _buildLoginPrompt();
+    }
+
+    // Show original chat screen for logged in users
     return Consumer<ChatProvider>(
       builder: (context, chatProvider, _) {
         final messages = chatProvider.messages;
@@ -284,16 +448,14 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
       },
     );
   }
-
 }
-
 
 class TypingText extends StatefulWidget {
   final String text;
   final TextStyle? style;
   final Duration speed;
   final VoidCallback? onComplete;
-  final VoidCallback? onCharTyped; // called after each char
+  final VoidCallback? onCharTyped;
 
   const TypingText({
     super.key,
@@ -326,7 +488,7 @@ class _TypingTextState extends State<TypingText> {
           _displayedText += widget.text[_currentIndex];
           _currentIndex++;
         });
-        widget.onCharTyped?.call(); // scroll after each char
+        widget.onCharTyped?.call();
       } else {
         _timer?.cancel();
         widget.onComplete?.call();

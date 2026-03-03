@@ -329,47 +329,49 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
 
               // Generate Summary Button
               if (_isEditing)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-                    child: Center(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.amber.shade600,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                          elevation: 3,
-                        ),
-                        onPressed: () async {
-                          setState(() => _isSaving = true);
-                          final summary = await provider.generateSummaryForNote(
-                            _currentNote,
-                            _contentController.text,
-                          );
-                          if (summary != null) {
-                            setState(() => _editedSummary = summary);
-                            _scrollController.animateTo(
-                              _scrollController.position.maxScrollExtent,
-                              duration: const Duration(milliseconds: 500),
-                              curve: Curves.easeOut,
-                            );
-                          }
-                          setState(() => _isSaving = false);
-                        },
-                        icon: const Icon(Icons.auto_awesome_rounded, size: 20),
-                        label: const Text(
-                          "Generate AI Summary",
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // SliverToBoxAdapter(
+                //   child: Padding(
+                //     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                //     child: Center(
+                //       child: ElevatedButton.icon(
+                //         style: ElevatedButton.styleFrom(
+                //           backgroundColor: Colors.amber.shade600,
+                //           foregroundColor: Colors.white,
+                //           shape: RoundedRectangleBorder(
+                //             borderRadius: BorderRadius.circular(16),
+                //           ),
+                //           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                //           elevation: 3,
+                //         ),
+                //         onPressed: () async {
+                //           setState(() => _isSaving = true);
+                //           final summary = await provider.generateSummaryForNote(
+                //             _currentNote,
+                //             _contentController.text,
+                //           );
+                //           if (summary != null) {
+                //             setState(() => _editedSummary = summary);
+                //             _scrollController.animateTo(
+                //               _scrollController.position.maxScrollExtent,
+                //               duration: const Duration(milliseconds: 500),
+                //               curve: Curves.easeOut,
+                //             );
+                //           }
+                //           setState(() => _isSaving = false);
+                //         },
+                //         icon: const Icon(Icons.auto_awesome_rounded, size: 20),
+                //         label: const Text(
+                //           "Generate AI Summary",
+                //           style: TextStyle(fontWeight: FontWeight.w600),
+                //         ),
+                //       ),
+                //     ),
+                //   ),
+                // ),
 
               // Bottom spacing
+
+
               const SliverToBoxAdapter(
                 child: SizedBox(height: 40),
               ),

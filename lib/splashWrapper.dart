@@ -16,7 +16,7 @@ class _SplashWrapperState extends State<SplashWrapper> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Timer(const Duration(seconds: 6), () { // ⏳ show for ~6 seconds
+      Timer(const Duration(seconds: 2), () { // ⏳ show for ~6 seconds
         if (!mounted) return;
         Navigator.of(context).pushReplacement(
           CupertinoPageRoute(builder: (_) => const AuthWrapper()),

@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../Providers/addNoteProvider.dart';
 import '../../config/creditConfig.dart';
+import '../../google_analytics.dart';
 import '../../services/Firestore_service.dart';
 import '../../services/creditService.dart';
 import '../../services/geminiService.dart';
@@ -42,6 +43,7 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
     super.dispose();
   }
 
+/*
   @override
   void initState() {
     super.initState();
@@ -51,7 +53,19 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
     provider = AddNoteProvider(
         ocrService: ocr, firestoreService: fs, geminiService: gemini);
   }
+*/
+  @override
+  void initState() {
+    super.initState();
+    // Log analytics when screen opens
+    AnalyticsService.logCreateNoteClick();
 
+    final ocr = OcrService();
+    final fs = FirestoreService();
+    final gemini = GeminiService();
+    provider = AddNoteProvider(
+        ocrService: ocr, firestoreService: fs, geminiService: gemini);
+  }
   Future<void> _pickImageFromCamera() async {
     final XFile? picked =
     await ImagePicker().pickImage(source: ImageSource.camera);

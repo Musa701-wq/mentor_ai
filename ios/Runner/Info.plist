@@ -2,85 +2,137 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>MentorAI: Ai Study Companion</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>MentorAI: Ai Study Companion</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.615602997008-kq06kn1c8c9pcv9r8jmmi4vk0t54e25n</string>
-			</array>
-		</dict>
-	</array>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<key>NSCameraUsageDescription</key>
-	<string>We need camera access to scan notes, homework, and study material.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Sign in with Apple may use Face ID for authentication.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We may need microphone access for voice input and interactive learning.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We need access to save images to your photo library.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need photo library access to upload study images or documents.</string>
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-	<key>UIFileSharingEnabled</key>
-	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>GADApplicationIdentifier</key>
-    <string>ca-app-pub-3774337907915828~5678897466</string>
-    	<!-- Replace with your real AdMob App ID from the AdMob console -->
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>Mentor AI</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>MentorAI: Ai Study Companion</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+       <dict>
+          <key>CFBundleTypeRole</key>
+          <string>Editor</string>
+          <key>CFBundleURLName</key>
+          <string>GoogleSignIn</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+             <string>com.googleusercontent.apps.565508297515-sjo6brvvjr0epefji86cqf77clnvimb9</string>
+          </array>
+       </dict>
+    </array>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
 
-    	<!-- ✅ App Tracking Transparency (needed for personalized ads on iOS 14+) -->
+    <!-- ✅ Firebase Analytics Configuration -->
+    <key>FIREBASE_ANALYTICS_COLLECTION_DEACTIVATED</key>
+    <false/>
+    <key>FIREBASE_ANALYTICS_COLLECTION_ENABLED</key>
+    <true/>
+
+    <!-- ✅ AdMob Configuration -->
+    <key>GADApplicationIdentifier</key>
+    <string>ca-app-pub-3774337907915828~5678897466</string>
+
+    <!-- ✅ Google Sign-In Client ID -->
+    <key>GIDClientID</key>
+    <string>984295804250-kb9jovjee4kps0rrpqdou4nnduvchj4b.apps.googleusercontent.com</string>
+
+    <!-- ✅ Google Analytics Ad Personalization -->
+    <key>GoogleAnalyticsDefaultAllowAdPersonalizationSignals</key>
+    <true/>
+
+    <!-- ✅ LSApplicationQueriesSchemes for Google Sign-In -->
+    <key>LSApplicationQueriesSchemes</key>
+    <array>
+       <string>com.googleusercontent.apps.984295804250-kb9jovjee4kps0rrpqdou4nnduvchj4b</string>
+       <string>googlechrome</string>
+       <string>com.google</string>
+       <string>com.google.sso</string>
+    </array>
+
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+
+    <key>NSAppTransportSecurity</key>
+    <dict>
+       <key>NSAllowsArbitraryLoads</key>
+       <true/>
+    </dict>
+
+    <!-- ✅ Camera Usage -->
+    <key>NSCameraUsageDescription</key>
+    <string>We need camera access to scan notes, homework, and study material.</string>
+
+    <!-- ✅ Face ID Usage -->
+    <key>NSFaceIDUsageDescription</key>
+    <string>Sign in with Apple may use Face ID for authentication.</string>
+
+    <!-- ✅ Location Usage (for ad relevance) -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Used to provide more relevant advertising content based on your location.</string>
+
+    <!-- ✅ Microphone Usage -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>We may need microphone access for voice input and interactive learning.</string>
+
+    <!-- ✅ Photo Library Add Usage -->
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>We need access to save images to your photo library.</string>
+
+    <!-- ✅ Photo Library Usage -->
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>We need photo library access to upload study images or documents.</string>
+
+    <!-- ✅ App Tracking Transparency (iOS 14+) -->
     <key>NSUserTrackingUsageDescription</key>
     <string>This identifier will be used to deliver personalized ads to you.</string>
+
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+
+    <!-- ✅ Status Bar Hidden -->
+    <key>UIStatusBarHidden</key>
+    <true/>
+
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+       <string>UIInterfaceOrientationPortrait</string>
+       <string>UIInterfaceOrientationLandscapeLeft</string>
+       <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+       <string>UIInterfaceOrientationPortrait</string>
+       <string>UIInterfaceOrientationPortraitUpsideDown</string>
+       <string>UIInterfaceOrientationLandscapeLeft</string>
+       <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+
+    <!-- ✅ Flutter Embedded Views -->
+    <key>io.flutter.embedded_views_preview</key>
+    <true/>
 </dict>
 </plist>

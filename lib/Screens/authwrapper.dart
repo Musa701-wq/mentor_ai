@@ -7,6 +7,7 @@ import '../models/usermodel.dart';
 import '../screens/signin.dart';
 import '../services/firestore_service.dart';
 import '../splashScreen.dart';
+import '../splashWrapper.dart';
 import 'home.dart';
 import 'onboarding/onboarding_wrapper.dart';
 
@@ -29,9 +30,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   }
 
-  Future<UserModel?> _loadUserData(String uid) {
+  Future<UserModel?> _loadUserData(String uid) async {
     final provider = Provider.of<HomeStatsProvider>(context, listen: false);
-    provider.loadDashboard();
+    await provider.loadDashboard();
     return _userCache.putIfAbsent(uid, () async {
       final firestoreService = FirestoreService();
       return await firestoreService.getUserProfile(uid);
@@ -46,7 +47,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         // 🔹 Splash only on very first load
         if (snap.connectionState == ConnectionState.waiting &&
             !_userCache.containsKey("init")) {
-          return MentorAISplashScreen();
+          return SplashWrapper();
         }
 
         final user = snap.data;
@@ -62,8 +63,34 @@ class _AuthWrapperState extends State<AuthWrapper> {
           builder: (context, fs) {
             if (fs.connectionState == ConnectionState.waiting &&
                 !_userCache.containsKey(user.uid)) {
-              return const Scaffold(); // lightweight loading
+              return const Scaffold(
+                body: Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF5E35B1)),
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text(
+                        "Loading",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
+
             if (fs.hasError) {
               // If there's an error loading profile, allow onboarding path
               return const OnboardingWrapper();
@@ -75,9 +102,52 @@ class _AuthWrapperState extends State<AuthWrapper> {
               return const OnboardingWrapper();
             }
 
-            return const HomeScreen();
+            final provider = Provider.of<HomeStatsProvider>(context, listen: false);
+
+            // Second FutureBuilder to await dashboard load
+            return FutureBuilder<void>(
+              future: provider.loadDashboard(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF5E35B1)),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            "Preparing dashboard",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  // Handle dashboard loading errors gracefully
+                  return const OnboardingWrapper();
+                }
+
+                return const HomeScreen();
+              },
+            );
           },
         );
+
       },
     );
   }

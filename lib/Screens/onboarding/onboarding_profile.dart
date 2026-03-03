@@ -9,7 +9,6 @@ class OnboardingProfile extends StatefulWidget {
 }
 
 class _OnboardingProfileState extends State<OnboardingProfile> {
-  final _nameController = TextEditingController();
   String? _selectedGrade;
   final List<String> _selectedSubjects = [];
 
@@ -59,56 +58,8 @@ class _OnboardingProfileState extends State<OnboardingProfile> {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // Name Input
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey[800] : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Your Name',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : Colors.grey[800],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TextField(
-                              controller: _nameController,
-                              decoration: InputDecoration(
-                                hintText: 'Enter your full name',
-                                filled: true,
-                                fillColor: isDark ? Colors.grey[700] : Colors.grey[100],
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 14,
-                                ),
-                              ),
-                              style: TextStyle(
-                                color: isDark ? Colors.white : Colors.grey[800],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
+                      // Name field removed – name comes from Google/Apple sign-in
+                      const SizedBox(height: 0),
 
                       // Grade Selection
                       Container(
@@ -237,23 +188,11 @@ class _OnboardingProfileState extends State<OnboardingProfile> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
-                            if (_nameController.text.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: const Text('Please enter your name'),
-                                  backgroundColor: Colors.red.shade600,
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
+                            // Pass blank name; actual name is sourced from sign-in
                             widget.onNext(
-                                _nameController.text,
-                                _selectedGrade!,
-                                _selectedSubjects
+                              '',
+                              _selectedGrade!,
+                              _selectedSubjects,
                             );
                           },
                           style: ElevatedButton.styleFrom(

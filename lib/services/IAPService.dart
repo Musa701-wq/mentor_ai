@@ -84,6 +84,37 @@ class IAPService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> restore() async {
+    debugPrint("🔹 Restoring purchases...");
+
+    bool restoredSomething = false;
+    final completer = Completer<void>();
+
+    final sub = _iap.purchaseStream.listen((purchases) {
+      for (final purchase in purchases) {
+        if (purchase.status == PurchaseStatus.restored) {
+          restoredSomething = true;
+        }
+        _onPurchaseUpdated([purchase]);
+      }
+      completer.complete(); // signal that at least one response arrived
+    });
+
+    await _iap.restorePurchases();
+
+    // Wait for the restore flow to complete
+    await completer.future;
+    await sub.cancel();
+
+    if (!restoredSomething) {
+      onError?.call("No past purchases found to restore.");
+      debugPrint("⚠️ No purchases were restored");
+    } else {
+      debugPrint("Purchase Restored");
+      // _showMessage("Purchases restored successfully ✅", success: true);
+    }
+  }
+
   /// Buy credits (only marks as pending for this session)
   Future<void> buyCredits(String creditId) async {
     try {

@@ -3,21 +3,21 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>615602997008-kq06kn1c8c9pcv9r8jmmi4vk0t54e25n.apps.googleusercontent.com</string>
+	<string>565508297515-sjo6brvvjr0epefji86cqf77clnvimb9.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.615602997008-kq06kn1c8c9pcv9r8jmmi4vk0t54e25n</string>
+	<string>com.googleusercontent.apps.565508297515-sjo6brvvjr0epefji86cqf77clnvimb9</string>
 	<key>API_KEY</key>
-	<string>AIzaSyDOZgDEnlyBCFB0fdF6JMAuTIcljwMAojQ</string>
+	<string>AIzaSyB84j6_p24iKCOu1ywFypUJfU5zz_WyKuI</string>
 	<key>GCM_SENDER_ID</key>
-	<string>615602997008</string>
+	<string>565508297515</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.vectorlabs.mentorai</string>
 	<key>PROJECT_ID</key>
-	<string>studentai-dbf06</string>
+	<string>mentorai-2afce</string>
 	<key>STORAGE_BUCKET</key>
-	<string>studentai-dbf06.firebasestorage.app</string>
+	<string>mentorai-2afce.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:615602997008:ios:6dde18eb64244c18ca4795</string>
+	<string>1:565508297515:ios:332fdf56fd6b993837ab6e</string>
 </dict>
 </plist>

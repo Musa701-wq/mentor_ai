@@ -5,6 +5,8 @@ import 'package:doc_text/doc_text.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:syncfusion_flutter_pdf/pdf.dart';
+
 
 
 class OcrService {
@@ -17,48 +19,20 @@ class OcrService {
     return _collectText(result);
   }
 
-  /// Extract text from a PDF file - SIMPLE SOLUTION
-  /// Extract text from a PDF file - FIXED SOLUTION
+  /// Extract text from a PDF file using syncfusion_flutter_pdf
   Future<String> extractTextFromPdf(File pdfFile) async {
     try {
-      // Read PDF file as bytes - CORRECT TYPE
       final List<int> bytes = await pdfFile.readAsBytes();
-
-      // Load PDF document - CORRECT CONSTRUCTOR
-      final pdf = pw.Document();
-      // OR use pdfx package agar zyada features chahiye
-
-      // Alternative: Simple text extraction using string reading
-      // Agar pdf package properly kaam nahi karta to yeh use karo
-      return _extractTextSimple(pdfFile);
+      final PdfDocument document = PdfDocument(inputBytes: bytes);
+      final String text = PdfTextExtractor(document).extractText();
+      document.dispose();
+      return text;
     } catch (e) {
       debugPrint('PDF extraction failed: $e');
-      // Fallback: Try to read as plain text
-      try {
-        return await pdfFile.readAsString();
-      } catch (e2) {
-        return '';
-      }
-    }
-  }
-
-  /// Simple text extraction - works for text-based PDFs
-  Future<String> _extractTextSimple(File pdfFile) async {
-    try {
-      // Some PDFs can be read as text directly
-      final content = await pdfFile.readAsString();
-
-      // Check if it contains PDF markers
-      if (content.contains('%PDF') || content.contains('stream') || content.contains('endstream')) {
-        // It's a real PDF, need proper parsing
-        debugPrint('Binary PDF detected, need proper parser');
-        return 'PDF parsing requires advanced library';
-      }
-      return content;
-    } catch (e) {
       return '';
     }
   }
+
   /// Extract text from a DOCX file
   Future<String> extractTextFromDocx(String filePath) async {
     try {

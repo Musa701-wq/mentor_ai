@@ -282,10 +282,10 @@ class QuizProvider with ChangeNotifier {
     }
 
     try {
+      // 🚀 SIMPLIFIED QUERY: Remove orderBy to avoid missing index errors during initial load
       Query baseQuery = firestore
           .collection("quizzes")
           .where('withShared', arrayContains: uid)
-          .orderBy('createdAt', descending: true)
           .limit(10);
 
       if (lastSharedDoc != null) {
@@ -293,26 +293,37 @@ class QuizProvider with ChangeNotifier {
       }
 
       final snap = await baseQuery.get();
-      print("📥 loadSharedQuizzes: found ${snap.docs.length} docs");
+      debugPrint("📥 loadSharedQuizzes: found ${snap.docs.length} docs");
 
       if (snap.docs.length < 10) hasMoreShared = false;
       if (snap.docs.isNotEmpty) lastSharedDoc = snap.docs.last;
 
       List<QuizModel> fetched = [];
       for (final d in snap.docs) {
-        final data = d.data() as Map<String, dynamic>;
-        data['id'] = d.id;
+        try {
+          final data = d.data() as Map<String, dynamic>;
+          data['id'] = d.id;
 
-        // get sharer details
-        final userDoc = await firestore.collection('users').doc(data['userId']).get();
-        if (userDoc.exists) {
-          final userData = userDoc.data()!;
-          data['ownerName'] = userData['name'] ?? '';
-          data['ownerEmail'] = userData['email'] ?? '';
+          // get sharer details with safety check
+          final sharerId = data['userId'];
+          if (sharerId != null && sharerId is String && sharerId.isNotEmpty) {
+            final userDoc = await firestore.collection('users').doc(sharerId).get();
+            if (userDoc.exists) {
+              final userData = userDoc.data()!;
+              data['ownerName'] = userData['name'] ?? 'Unknown User';
+              data['ownerEmail'] = userData['email'] ?? '';
+            }
+          }
+
+          fetched.add(QuizModel.fromMap(data));
+        } catch (e) {
+          debugPrint("⚠️ Error parsing individual quiz document ${d.id}: $e");
+          // Continue with next documents instead of failing entire list
         }
-
-        fetched.add(QuizModel.fromMap(data));
       }
+
+      // Sort locally if needed since we removed firestore orderBy
+      fetched.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       if (query.isNotEmpty) {
         fetched = fetched.where((q) {
@@ -321,7 +332,7 @@ class QuizProvider with ChangeNotifier {
       }
 
       sharedQuizzes.addAll(fetched);
-      print("✅ loadSharedQuizzes: added ${fetched.length} quizzes");
+      debugPrint("✅ loadSharedQuizzes: added ${fetched.length} quizzes");
     } catch (e, st) {
       print("❌ loadSharedQuizzes error: $e");
       print(st);

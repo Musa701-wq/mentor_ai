@@ -98,55 +98,72 @@ class NotesProvider with ChangeNotifier {
       hasMoreShared = true;
     }
 
-    Query baseQuery = firestoreService.notesCollection
-        .where('withShared', arrayContains: uid)
-        .orderBy('createdAt', descending: true)
-        .limit(10);
+    try {
+      // 🚀 SIMPLIFIED QUERY: Remove orderBy to avoid missing index errors during initial load
+      Query baseQuery = firestoreService.notesCollection
+          .where('withShared', arrayContains: uid)
+          .limit(10);
 
-    if (lastSharedDoc != null) {
-      baseQuery = baseQuery.startAfterDocument(lastSharedDoc!);
-    }
-
-    final snap = await baseQuery.get();
-
-    if (snap.docs.length < 10) hasMoreShared = false;
-    if (snap.docs.isNotEmpty) lastSharedDoc = snap.docs.last;
-
-    List<NoteModel> fetchedNotes = [];
-    for (final d in snap.docs) {
-      final data = d.data() as Map<String, dynamic>;
-      data['id'] = d.id;
-
-      // get sharer details
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(data['uid'])
-          .get();
-      if (userDoc.exists) {
-        final userData = userDoc.data()!;
-        data['ownerName'] = userData['name'] ?? '';
-        data['ownerEmail'] = userData['email'] ?? '';
+      if (lastSharedDoc != null) {
+        baseQuery = baseQuery.startAfterDocument(lastSharedDoc!);
       }
 
-      fetchedNotes.add(NoteModel.fromMap(data));
+      final snap = await baseQuery.get();
+      debugPrint("📥 loadSharedNotes: found ${snap.docs.length} docs");
+
+      if (snap.docs.length < 10) hasMoreShared = false;
+      if (snap.docs.isNotEmpty) lastSharedDoc = snap.docs.last;
+
+      List<NoteModel> fetchedNotes = [];
+      for (final d in snap.docs) {
+        try {
+          final data = d.data() as Map<String, dynamic>;
+          data['id'] = d.id;
+
+          // get sharer details with safety check
+          final sharerId = data['uid'];
+          if (sharerId != null && sharerId is String && sharerId.isNotEmpty) {
+            final userDoc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(sharerId)
+                .get();
+            if (userDoc.exists) {
+              final userData = userDoc.data()!;
+              data['ownerName'] = userData['name'] ?? 'Unknown User';
+              data['ownerEmail'] = userData['email'] ?? '';
+            }
+          }
+
+          fetchedNotes.add(NoteModel.fromMap(data));
+        } catch (e) {
+          debugPrint("⚠️ Error parsing individual shared note ${d.id}: $e");
+        }
+      }
+
+      // Sort locally by date since we removed Firestore orderBy
+      fetchedNotes.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      if (query.isNotEmpty) {
+        fetchedNotes = fetchedNotes.where((n) {
+          final titleMatch = n.title.toLowerCase().contains(query.toLowerCase());
+          final tagsMatch = n.tags.any((t) => t.toLowerCase().contains(query.toLowerCase()));
+          return titleMatch || tagsMatch;
+        }).toList();
+      }
+
+      sharedNotes.addAll(fetchedNotes);
+      debugPrint("✅ loadSharedNotes: added ${fetchedNotes.length} notes");
+
+      // refresh favorites
+      final favs = await firestoreService.fetchFavorites(uid);
+      favoriteNotes = favs.toSet();
+    } catch (e, st) {
+      debugPrint("❌ loadSharedNotes error: $e");
+      debugPrint(st.toString());
+    } finally {
+      isLoadingShared = false;
+      notifyListeners();
     }
-
-    if (query.isNotEmpty) {
-      fetchedNotes = fetchedNotes.where((n) {
-        final titleMatch = n.title.toLowerCase().contains(query.toLowerCase());
-        final tagsMatch = n.tags.any((t) => t.toLowerCase().contains(query.toLowerCase()));
-        return titleMatch || tagsMatch;
-      }).toList();
-    }
-
-    sharedNotes.addAll(fetchedNotes);
-
-    // refresh favorites
-    final favs = await firestoreService.fetchFavorites(uid);
-    favoriteNotes = favs.toSet();
-
-    isLoadingShared = false;
-    notifyListeners();
   }
 
 

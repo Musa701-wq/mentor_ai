@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,31 +20,45 @@ class _HomeworkHelperScreenState extends State<HomeworkHelperScreen> {
   final TextEditingController _titleController = TextEditingController();
   final FocusNode _textFocusNode = FocusNode();
   final FocusNode _titleFocusNode = FocusNode();
-  bool _showSolution = false; // State for dropdown expansion
 
-  Future<void> _pickFile(HomeworkProvider provider) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ["jpg", "png", "jpeg", "pdf", "docx"],
-    );
-    if (result != null) {
-      final file = File(result.files.single.path!);
-      final ext = result.files.single.extension?.toLowerCase();
+  Future<void> _pickImage(HomeworkProvider provider) async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      final file = File(pickedFile.path);
 
-      // ✅ Wrap in credit confirmation
       await CreditsService.confirmAndDeductCredits(
         context: context,
         cost: CreditsConfig.aiHomeworkHelper,
         actionName: "Homework Solving",
         onConfirmedAction: () async {
+          final error = await provider.extractAndSolveFromImage(file);
+          _handleResult(error);
+        },
+      );
+    }
+  }
+
+  Future<void> _pickFile(HomeworkProvider provider, List<String> extensions) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: extensions,
+    );
+    if (result != null) {
+      final file = File(result.files.single.path!);
+      final ext = result.files.single.extension?.toLowerCase();
+
+      await CreditsService.confirmAndDeductCredits(
+        context: context,
+        cost: CreditsConfig.aiHomeworkHelper,
+        actionName: "Homework Solving",
+        onConfirmedAction: () async {
+          String? error;
           if (ext == "pdf") {
-            await provider.extractAndSolveFromPdf(file);
+            error = await provider.extractAndSolveFromPdf(file);
           } else if (ext == "docx") {
-            await provider.extractAndSolveFromDocx(file.path);
-          } else {
-            await provider.extractAndSolveFromImage(file);
+            error = await provider.extractAndSolveFromDocx(file.path);
           }
-          setState(() => _showSolution = true);
+          _handleResult(error);
         },
       );
     }
@@ -57,11 +72,69 @@ class _HomeworkHelperScreenState extends State<HomeworkHelperScreen> {
       cost: CreditsConfig.aiHomeworkHelper,
       actionName: "Homework Solving",
       onConfirmedAction: () async {
-        await provider.solveFromText(_textController.text.trim());
+        final error = await provider.solveFromText(_textController.text.trim());
+        _handleResult(error);
         _textFocusNode.unfocus();
-        setState(() => _showSolution = true);
       },
     );
+  }
+
+  List<Map<String, String>> _parseSolutions(String text) {
+    final List<Map<String, String>> solutions = [];
+
+    // Remove asterisks just in case the model ignored our prompt
+    final cleanText = text.replaceAll('*', '');
+
+    // Regex to find all Question-Answer-Explanation blocks
+    final regex = RegExp(
+      r'Question:\s*(.*?)\s*Answer:\s*(.*?)\s*Explanation:\s*(.*?)(?=Question:|$)',
+      dotAll: true,
+      caseSensitive: false,
+    );
+
+    final matches = regex.allMatches(cleanText);
+
+    for (final match in matches) {
+      solutions.add({
+        'question': match.group(1)?.trim() ?? "",
+        'answer': match.group(2)?.trim() ?? "",
+        'explanation': match.group(3)?.trim() ?? "",
+      });
+    }
+
+    return solutions;
+  }
+
+  void _handleResult(String? error) {
+    if (!mounted) return;
+    
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Text("AI Solution Generated & Saved!"),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   @override
@@ -73,383 +146,411 @@ class _HomeworkHelperScreenState extends State<HomeworkHelperScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          "Homework Helper",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-        ),
-        centerTitle: true,
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.grey[800],
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.help_outline_rounded,
-                color: isDark ? Colors.grey[300] : Colors.grey[600]),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      body: CustomScrollView(
+        slivers: [
+          // 🎨 Premium Header
+          SliverAppBar(
+            expandedHeight: 180,
+            pinned: true,
+            stretch: true,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text(
+                "Homework Helper",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
                 ),
-                builder: (context) => _buildHowItWorksSheet(),
-              );
-            },
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // Main Input Card
-              Container(
+              ),
+              centerTitle: true,
+              background: Container(
                 decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.indigo.shade800,
+                      Colors.purple.shade700,
+                      Colors.pink.shade600,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Solve Any Homework",
-                        style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Upload or type your homework question",
-                        style:
-                        TextStyle(fontSize: 14, color: Colors.grey[600]),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 20),
+                child: Opacity(
+                  opacity: 0.1,
+                  child: Icon(Icons.psychology_rounded,
+                      size: 200, color: Colors.white),
+                ),
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.help_outline_rounded, color: Colors.white),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(32)),
+                    ),
+                    builder: (context) => _buildHowItWorksSheet(),
+                  );
+                },
+              ),
+            ],
+          ),
 
-                      // Input Row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? Colors.grey[700]
-                                    : Colors.grey[100],
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: TextField(
-                                controller: _textController,
-                                focusNode: _textFocusNode,
-                                maxLines: 4,
-                                decoration: InputDecoration(
-                                  hintText: "Type your homework question...",
-                                  border: InputBorder.none,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 14),
-                                  hintStyle:
-                                  TextStyle(color: Colors.grey[500]),
-                                ),
-                                style: const TextStyle(fontSize: 16),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Send Button
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.purple.shade600,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color:
-                                  Colors.purple.shade600.withOpacity(0.4),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.send_rounded,
-                                  color: Colors.white),
-                              onPressed: () => _solveFromText(provider),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Upload Options
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildUploadOption(
-                            icon: Icons.image_rounded,
-                            label: "Image",
-                            color: Colors.blue.shade600,
-                            onTap: () => _pickFile(provider),
-                          ),
-                          _buildUploadOption(
-                            icon: Icons.picture_as_pdf_rounded,
-                            label: "PDF",
-                            color: Colors.red.shade600,
-                            onTap: () => _pickFile(provider),
-                          ),
-                          _buildUploadOption(
-                            icon: Icons.description_rounded,
-                            label: "Document",
-                            color: Colors.green.shade600,
-                            onTap: () => _pickFile(provider),
-                          ),
-                        ],
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // 📝 Main Input Card
+                Container(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
+                        blurRadius: 30,
+                        offset: const Offset(0, 15),
                       ),
                     ],
                   ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Icon(Icons.edit_note_rounded,
+                                  color: Colors.purple.shade600),
+                            ),
+                            const SizedBox(width: 16),
+                            const Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Ask Anything",
+                                  style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w800),
+                                ),
+                                Text(
+                                  "Type or upload your work",
+                                  style: TextStyle(
+                                      fontSize: 14, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Input Area
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.grey[850] : Colors.grey[50],
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: isDark
+                                    ? Colors.grey[700]!
+                                    : Colors.grey[200]!),
+                          ),
+                          child: Column(
+                            children: [
+                              TextField(
+                                controller: _textController,
+                                focusNode: _textFocusNode,
+                                maxLines: 5,
+                                decoration: InputDecoration(
+                                  hintText: "Enter your question here...",
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.all(20),
+                                  hintStyle: TextStyle(
+                                      color: Colors.grey[400], fontSize: 15),
+                                ),
+                                style: const TextStyle(
+                                    fontSize: 16, height: 1.5),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                                child: Row(
+                                  children: [
+                                    _buildSmallIconBtn(
+                                      icon: Icons.image_outlined,
+                                      color: Colors.blue,
+                                      onTap: () => _pickImage(provider),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    _buildSmallIconBtn(
+                                      icon: Icons.picture_as_pdf_outlined,
+                                      color: Colors.red,
+                                      onTap: () => _pickFile(provider, ["pdf"]),
+                                    ),
+                                    const Spacer(),
+                                    ElevatedButton.icon(
+                                      icon: const Icon(Icons.auto_awesome,
+                                          size: 18),
+                                      label: const Text("Solve"),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.purple.shade600,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 24, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                            BorderRadius.circular(14)),
+                                      ),
+                                      onPressed: () => _solveFromText(provider),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-              // Loading
-              if (provider.loading) _buildLoadingCard(cardColor!),
+                // ⚡ Results Section
+                if (provider.loading) _buildLoadingCard(cardColor!),
 
-              // Results
-              if (provider.steps != null && !provider.loading)
-                _buildSolutionCard(provider, cardColor!, isDark),
-
-              // Save Section
-              if (provider.steps != null && !provider.loading)
-                _buildSaveSection(provider, cardColor!, isDark),
-            ],
+                if (provider.steps != null && !provider.loading) ...[
+                  ..._buildPremiumSolutionCards(provider, cardColor!, isDark),
+                ],
+              ]),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildUploadOption({
+  Widget _buildSmallIconBtn({
     required IconData icon,
-    required String label,
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 24, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHowItWorksSheet() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('How It Works',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          SizedBox(height: 16),
-          Text(
-            '1. Upload an image, PDF, or document of your homework\n\n'
-                '2. Or type your homework question directly\n\n'
-                '3. Get step-by-step solutions instantly\n\n'
-                '4. Save your solutions for future reference',
-            style: TextStyle(fontSize: 16, height: 1.5),
-          ),
-        ],
+        child: Icon(icon, color: color, size: 20),
       ),
     );
   }
 
   Widget _buildLoadingCard(Color cardColor) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
       ),
       child: Column(
         children: [
-          CircularProgressIndicator(
-            valueColor:
-            AlwaysStoppedAnimation<Color>(Colors.purple.shade600),
+          const SizedBox(
+            width: 50,
+            height: 50,
+            child: CircularProgressIndicator(
+              strokeWidth: 5,
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF7E57C2)),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           const Text(
-            "Solving your homework...",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            "Analyzing homework...",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 8),
           Text(
-            "This may take a few moments",
-            style: TextStyle(color: Colors.grey),
+            "Our AI is finding the best explanation",
+            style: TextStyle(color: Colors.grey[500]),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSolutionCard(HomeworkProvider provider, Color cardColor, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+  List<Widget> _buildPremiumSolutionCards(
+      HomeworkProvider provider, Color cardColor, bool isDark) {
+    final solutions = _parseSolutions(provider.steps!);
+
+    if (solutions.isEmpty) {
+      // Fallback for unstructured responses
+      return [
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(28),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () => setState(() => _showSolution = !_showSolution),
-            child: Container(
-              padding: const EdgeInsets.all(20),
+          child: Text(provider.steps!, style: const TextStyle(fontSize: 16, height: 1.6)),
+        )
+      ];
+    }
+
+    return solutions.map((sol) => Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.4 : 0.08),
+              blurRadius: 30,
+              offset: const Offset(0, 15),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
               decoration: BoxDecoration(
-                color: Colors.purple.withOpacity(0.1),
-                borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20)),
+                color: Colors.purple.withOpacity(0.05),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(children: [
-                    Icon(Icons.auto_awesome_rounded,
-                        color: Colors.purple.shade600),
-                    const SizedBox(width: 12),
-                    const Text("Step-by-Step Solution",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.w700)),
-                  ]),
-                  Icon(
-                    _showSolution
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    color: Colors.purple.shade600,
-                  )
+                  Icon(Icons.auto_awesome, color: Colors.purple.shade600, size: 20),
+                  const SizedBox(width: 12),
+                  const Text(
+                    "AI Solution",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
                 ],
               ),
             ),
+
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (sol['question']!.isNotEmpty) ...[
+                    _buildLabel("QUESTION"),
+                    Text(sol['question']!,
+                        style: const TextStyle(
+                            fontSize: 16, height: 1.6, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (sol['answer']!.isNotEmpty) ...[
+                    _buildLabel("CORRECT ANSWER"),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.green.withOpacity(0.2)),
+                      ),
+                      child: Text(sol['answer']!,
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.green)),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (sol['explanation']!.isNotEmpty) ...[
+                    _buildLabel("STUDY GUIDE"),
+                    Text(sol['explanation']!,
+                        style: TextStyle(
+                            fontSize: 16,
+                            height: 1.7,
+                            color: isDark ? Colors.grey[300] : Colors.grey[800])),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    )).toList();
+  }
+
+  Widget _buildLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          color: Colors.purple.shade400,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildHowItWorksSheet() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('How it Works',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
+              const Spacer(),
+              IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close))
+            ],
           ),
-          if (_showSolution)
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: Text(provider.steps!,
-                  style: const TextStyle(fontSize: 16, height: 1.6)),
-            )
+          const SizedBox(height: 24),
+          _buildUsageStep(Icons.camera_alt_rounded, "Take a photo or upload a file of your homework."),
+          _buildUsageStep(Icons.chat_bubble_outline_rounded, "Or just type the question directly."),
+          _buildUsageStep(Icons.auto_awesome_rounded, "Our AI analyzes the problem and provides the answer with a full guide."),
         ],
       ),
     );
   }
 
-  Widget _buildSaveSection(HomeworkProvider provider, Color cardColor, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
+  Widget _buildUsageStep(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
         children: [
-          const Text("Save Your Solution",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 12),
           Container(
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDark ? Colors.grey[700] : Colors.grey[100],
+              color: Colors.purple.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: TextField(
-              controller: _titleController,
-              focusNode: _titleFocusNode,
-              decoration: InputDecoration(
-                hintText: "Enter a title for your homework...",
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
-                hintStyle: TextStyle(color: Colors.grey[500]),
-              ),
-            ),
+            child: Icon(icon, color: Colors.purple.shade600),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.save_rounded, size: 20),
-              label: const Text("Save Homework",
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple.shade600,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () async {
-                if (_titleController.text.trim().isNotEmpty) {
-                  await provider.saveHomework(_titleController.text.trim());
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                      const Text("Homework saved successfully! 🎉"),
-                      backgroundColor: Colors.green,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      margin: const EdgeInsets.all(16),
-                    ),
-                  );
-                  _titleFocusNode.unfocus();
-                  Navigator.pop(context);
-                }
-              },
-            ),
-          ),
+          const SizedBox(width: 16),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 16, height: 1.4))),
         ],
       ),
     );
   }
 }
+

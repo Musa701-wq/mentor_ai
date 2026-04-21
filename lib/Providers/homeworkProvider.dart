@@ -29,75 +29,126 @@ class HomeworkProvider extends ChangeNotifier {
   String? _searchQuery;
 
   // ========== AI Homework Solving ==========
-  Future<void> extractAndSolveFromImage(File image) async {
+  Future<String?> extractAndSolveFromImage(File image) async {
     loading = true;
     notifyListeners();
     try {
       extractedText = await _ocrService.extractTextFromImage(image);
       steps = await _geminiService.chat(
-        "Provide step-by-step guidance to solve this homework, do NOT provide the final solution, "
-            "Also provide Detailed Guide assume your self as a tutor:\n$extractedText",
+        "Solve this homework question from the extracted text:\n$extractedText",
       );
+      
+      // 🚀 Auto-save in background
+      _autoSave();
+      
+      return null; // Success
+    } catch (e) {
+      debugPrint('❌ Homework solving error: $e');
+      return e.toString().replaceFirst('Exception: ', '');
     } finally {
       loading = false;
       notifyListeners();
     }
   }
 
-  Future<void> extractAndSolveFromPdf(File pdf) async {
+  Future<String?> extractAndSolveFromPdf(File pdf) async {
     loading = true;
     notifyListeners();
     try {
       extractedText = await _ocrService.extractTextFromPdf(pdf);
       steps = await _geminiService.chat(
-        "Provide step-by-step guidance to solve this homework, do NOT provide the final solution, "
-            "Also provide Detailed Guide assume your self as a tutor:\n$extractedText",
+        "Solve this homework question from the extracted PDF text:\n$extractedText",
       );
+      
+      // 🚀 Auto-save in background
+      _autoSave();
+      
+      return null;
+    } catch (e) {
+      debugPrint('❌ Homework solving error: $e');
+      return e.toString().replaceFirst('Exception: ', '');
     } finally {
       loading = false;
       notifyListeners();
     }
   }
 
-  Future<void> extractAndSolveFromDocx(String filePath) async {
+  Future<String?> extractAndSolveFromDocx(String filePath) async {
     loading = true;
     notifyListeners();
     try {
       extractedText = await _ocrService.extractTextFromDocx(filePath);
       steps = await _geminiService.chat(
-        "Provide step-by-step guidance to solve this homework, do NOT provide the final solution, "
-            "Also provide Detailed Guide assume your self as a tutor:\n$extractedText",
+        "Solve this homework question from the extracted document text:\n$extractedText",
       );
+      
+      // 🚀 Auto-save in background
+      _autoSave();
+      
+      return null;
+    } catch (e) {
+      debugPrint('❌ Homework solving error: $e');
+      return e.toString().replaceFirst('Exception: ', '');
     } finally {
       loading = false;
       notifyListeners();
     }
   }
 
-  Future<void> solveFromText(String text) async {
+  Future<String?> solveFromText(String text) async {
     loading = true;
     notifyListeners();
     try {
       extractedText = text;
       steps = await _geminiService.chat(
-        "Provide step-by-step guidance to solve this homework, do NOT provide the final solution, "
-            "Also provide Detailed Guide assume your self as a tutor:\n$text",
+        "Solve this homework question:\n$text",
       );
+
+      // 🚀 Auto-save in background
+      _autoSave();
+
+      return null;
+    } catch (e) {
+      debugPrint('❌ Homework solving error: $e');
+      return e.toString().replaceFirst('Exception: ', '');
     } finally {
       loading = false;
       notifyListeners();
     }
   }
 
-  Future<void> saveHomework(String title) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || steps == null) return;
+  /// Background auto-save logic
+  void _autoSave() {
+    if (steps == null) return;
+    
+    // Generate a default title from extracted text
+    String defaultTitle = "AI Solution";
+    if (extractedText != null && extractedText!.trim().isNotEmpty) {
+      final cleanText = extractedText!.trim().replaceAll("\n", " ");
+      defaultTitle = cleanText.length > 40 
+          ? "${cleanText.substring(0, 40)}..." 
+          : cleanText;
+    }
 
-    await _firestoreService.addHomework(uid, {
-      "title": title,
-      "content": steps,
-      "timestamp": DateTime.now().toIso8601String(),
-    });
+    saveHomework(defaultTitle);
+  }
+
+  Future<String?> saveHomework(String title) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return "User not logged in.";
+    if (steps == null) return "No solution to save.";
+
+    try {
+      await _firestoreService.addHomework(uid, {
+        "title": title,
+        "content": steps,
+        "timestamp": DateTime.now().toIso8601String(),
+      });
+      return null; // Success
+    } catch (e) {
+      debugPrint('❌ Error saving homework: $e');
+      return e.toString();
+    }
   }
 
   // ========== Fetch Saved Homeworks ==========

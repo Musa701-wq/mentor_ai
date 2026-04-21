@@ -14,6 +14,9 @@ class FullTextScreen extends StatelessWidget {
     final textColor = isDark ? Colors.grey[100] : Colors.grey[900];
     final backgroundColor = isDark ? Colors.grey[900] : Colors.grey[50];
     final cardColor = isDark ? Colors.grey[800] : Colors.white;
+    
+    final wordCount = text.trim().isEmpty ? 0 : text.trim().split(RegExp(r'\s+')).length;
+    final readTime = (wordCount / 200).ceil();
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -66,7 +69,7 @@ class FullTextScreen extends StatelessWidget {
                           size: 16, color: Colors.grey.shade600),
                       const SizedBox(width: 6),
                       Text(
-                        '${text.split(' ').length} words',
+                        '$wordCount words',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -94,7 +97,7 @@ class FullTextScreen extends StatelessWidget {
                           size: 16, color: Colors.grey.shade600),
                       const SizedBox(width: 6),
                       Text(
-                        '${(text.split(' ').length / 200).ceil()} min read',
+                        '$readTime min read',
                         style: TextStyle(
                           fontSize: 13,
                           color: Colors.grey.shade600,
@@ -108,11 +111,13 @@ class FullTextScreen extends StatelessWidget {
 
             Expanded(
               child: Container(
+                width: double.infinity,
                 margin: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: cardColor,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: isDark
+
                       ? null
                       : [
                     BoxShadow(

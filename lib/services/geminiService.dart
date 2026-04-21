@@ -1,150 +1,120 @@
 // lib/services/gemini_service.dart
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class GeminiService {
-  static const String GEMINI_API_KEY = 'AIzaSyB5r1svNd8pABClP2j0w89LRdDyW5gKPMc';
-  static const String ENDPOINT =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
-
-  /// Utility: log request + response
-  void _logRequest(String method, Uri url, Map<String, dynamic> body) {
-    print('📤 [$method] Request to: $url');
-    print('📦 Request body: ${json.encode(body)}');
+  // Hosted Backend Configuration
+  String get _baseUrl {
+    // 🚀 Automatically detect environment to avoid SocketException
+    if (kIsWeb) return 'http://localhost:3000';
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000'; // Special IP for Android Emulator
+    return 'http://localhost:3000'; // iOS Simulator or Desktop
   }
 
-  void _logResponse(http.Response response) {
-    print('📥 Response [${response.statusCode}]: ${response.body}');
+  /// Centralized method to call the hosted Gemini API
+  Future<String> _ask(String prompt) async {
+    final url = Uri.parse('$_baseUrl/api/gemini');
+    
+    debugPrint('📤 Calling Hosted AI: $url');
+    // debugPrint('📦 Prompt: $prompt'); // Uncomment for deep debugging
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'prompt': prompt}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return _cleanResponse(data['result'] ?? "No result from AI.");
+      } else {
+        debugPrint('❌ Hosted API Error: ${response.statusCode} - ${response.body}');
+        throw Exception('Error calling hosted model: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('❌ Network / API Exception: $e');
+      rethrow;
+    }
+  }
+
+  /// Removes unwanted formatting like asterisks and extra spaces
+  String _cleanResponse(String text) {
+    return text
+        .replaceAll(RegExp(r'\*+'), '') // Remove any number of asterisks
+        .replaceAll(RegExp(r'\s{2,}'), ' ') // Normalize spaces
+        .trim();
   }
 
   /// Summarize text
   Future<String> summarize(String text) async {
-    final url = Uri.parse('$ENDPOINT?key=$GEMINI_API_KEY');
-    final body = {
-      "contents": [
-        {
-          "parts": [
-            {"text": "Summarize the following text:\n\n$text"}
-          ]
-        }
-      ]
-    };
+    final prompt = """
+Summarize the following text professionally and concisely. 
+Focus on key takeaways and main arguments. 
+Ensure the output is easy to read and structured logically.
 
-    _logRequest("POST", url, body);
+Text to summarize:
+$text
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(body),
-    );
-
-    _logResponse(response);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = json.decode(response.body);
-      return data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
-          "No summary returned.";
-    } else {
-      throw Exception(
-          '❌ Gemini API error: ${response.statusCode} ${response.body}');
-    }
+Guidelines:
+1. Do NOT use asterisks (*) for bullet points or emphasis.
+2. Use clear, concise language.
+3. If using bullets, use a dash (-) or a bullet point (•).
+4. Keep the structure clean and readable.
+""";
+    return await _ask(prompt);
   }
 
   /// Chat with Gemini (Study Assistant mode)
   Future<String> chat(String query) async {
-    final url = Uri.parse('$ENDPOINT?key=$GEMINI_API_KEY');
+    final prompt = """
+You are a helpful Study Buddy AI. 
+- Use the following STRICT format for your response:
 
-    final body = {
-      "contents": [
-        {
-          "parts": [
-            {
-              "text":
-              "You are a helpful Study Buddy AI. - Answer only study-related questions. - If unrelated, politely decline. - Keep answers concise (max 3–4 lines). - For problem-solving, do not give full solutions — only provide minor hints or guidance. User: $query"
-            }
-          ]
-        }
-      ]
-    };
+Question: [Specific part of the user's query/image being addressed]
+Answer: [Correct Option/Final Answer]
+Explanation: [Clear and detailed reasoning]
 
-    _logRequest("POST", url, body);
+- IMPORTANT: Do NOT use '*' (asterisks) for bullet points or lists.
+- You can use '**' (bold) for headers like **Question:**, **Answer:**, and **Explanation:**.
+- If multiple questions are present, repeat this block for each.
+- Maintain a highly professional and clean layout.
+- If the question is unrelated to studies, politely decline.
 
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(body),
-    );
-
-    _logResponse(response);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = json.decode(response.body);
-      return data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
-          "Sorry, I don’t have an answer for that.";
-    } else {
-      throw Exception(
-          '❌ Gemini API error: ${response.statusCode} ${response.body}');
-    }
+User: $query
+""";
+    return await _ask(prompt);
   }
 
-  Future<String> chatWithContext(
-      String query, List<Map<String, String>> context) async {
-    final url = Uri.parse('$ENDPOINT?key=$GEMINI_API_KEY');
+  /// Chat with context (Study Assistant mode)
+  Future<String> chatWithContext(String query, List<Map<String, String>> context) async {
+    final conversation = context.map((m) {
+      final role = (m["role"] == "user") ? "user" : "model";
+      return "$role: ${m["text"]}";
+    }).join("\n");
 
-    // Ensure roles are always valid
-    final contents = context.map((m) {
-      final role = (m["role"] == "user" || m["role"] == "model")
-          ? m["role"]
-          : "user"; // fallback
-      return {
-        "role": role,
-        "parts": [
-          {"text": m["text"] ?? ""}
-        ]
-      };
-    }).toList();
+    final prompt = """
+You are a helpful Study Buddy AI.
+Use a clean and professional layout using ONLY the headers below:
 
-    // Add the current user query as the latest message
-    contents.add({
-      "role": "user",
-      "parts": [
-        {"text": query}
-      ]
-    });
+**Question:** [Text]
+**Answer:** [Text]
+**Explanation:** [Text]
 
-    final body = {"contents": contents};
+- Strictly avoid all '*' (asterisks) for bullets.
+- Separate each section clearly.
 
-    _logRequest("POST", url, body);
-
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(body),
-    );
-
-    _logResponse(response);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = json.decode(response.body);
-      return data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
-          "No response.";
-    } else {
-      throw Exception(
-          "❌ Gemini API error: ${response.statusCode} ${response.body}");
-    }
+$conversation
+user: $query
+""";
+    return await _ask(prompt);
   }
 
-
-  Future<List<Map<String, dynamic>>> generateQuizFromNotes(
-      String notes) async {
-    final url = Uri.parse('$ENDPOINT?key=$GEMINI_API_KEY');
-
-    final body = {
-      "contents": [
-        {
-          "parts": [
-            {
-              "text": """
+  /// Generate MCQs from notes
+  Future<List<Map<String, dynamic>>> generateQuizFromNotes(String notes) async {
+    final prompt = """
 Generate exactly 5 multiple-choice quiz questions (MCQs) from the following notes:
 $notes
 
@@ -159,79 +129,28 @@ Each object must look like this:
     {"text": "option D", "correct": false}
   ]
 }
-"""
-            }
-          ]
-        }
-      ]
-    };
+""";
+    
+    String result = await _ask(prompt);
+    
+    // Clean JSON formatting if model returns markdown
+    result = result.replaceAll("```json", "").replaceAll("```", "").trim();
 
-    _logRequest("POST", url, body);
-
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(body),
-    );
-
-    _logResponse(response);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = json.decode(response.body);
-      String text =
-          data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? "[]";
-
-      // 🔧 Clean common issues
-      text = text.replaceAll("```json", "").replaceAll("```", "").trim();
-
-      try {
-        return List<Map<String, dynamic>>.from(json.decode(text));
-      } catch (e) {
-        print("❌ JSON parse error: $e\nRaw text: $text");
-        return [];
-      }
-    } else {
-      throw Exception(
-          "❌ Gemini API error: ${response.statusCode} ${response.body}");
+    try {
+      return List<Map<String, dynamic>>.from(json.decode(result));
+    } catch (e) {
+      debugPrint("❌ JSON parse error in Quiz generation: $e\nRaw text: $result");
+      return [];
     }
   }
 
-  Future<String> validateCorrectOption(
-      String question, List<String> options) async {
-    final url = Uri.parse('$ENDPOINT?key=$GEMINI_API_KEY');
-
-    final body = {
-      "contents": [
-        {
-          "parts": [
-            {
-              "text":
-              "Here is a question: \"$question\" with options: ${options.join(", ")}. "
-                  "Return only the correct option text."
-            }
-          ]
-        }
-      ]
-    };
-
-    _logRequest("POST", url, body);
-
-    final response = await http.post(url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(body));
-
-    _logResponse(response);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = json.decode(response.body);
-      return data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
-          "No correct answer found.";
-    } else {
-      throw Exception(
-          "❌ Gemini API error: ${response.statusCode} ${response.body}");
-    }
+  /// Validate correct option text
+  Future<String> validateCorrectOption(String question, List<String> options) async {
+    final prompt = "Here is a question: \"$question\" with options: ${options.join(", ")}. Return only the correct option text.";
+    return await _ask(prompt);
   }
 
+  /// Generate complex Study Plan
   Future<String> generateStudyPlan({
     required String goal,
     required String examDate,
@@ -240,16 +159,8 @@ Each object must look like this:
     required int studyDaysPerWeek,
     required int hoursPerDay,
   }) async {
-    final url = Uri.parse('$ENDPOINT?key=$GEMINI_API_KEY');
-
     final notesText = selectedNotes.join("\n");
-
-    final body = {
-      "contents": [
-        {
-          "parts": [
-            {
-              "text": """
+    final prompt = """
 You are a Study Planner AI. Create a detailed study plan based on the following inputs:
 
 - Goal: $goal
@@ -284,30 +195,9 @@ Return the study plan **strictly in valid JSON only**, with no explanations, com
   ],
   "reminders": ["<reminder1>", "<reminder2>", ...]
 }
-"""
-            }
-          ]
-        }
-      ]
-    };
+""";
 
-    _logRequest("POST", url, body);
-
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(body),
-    );
-
-    _logResponse(response);
-
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = json.decode(response.body);
-      return data['candidates']?[0]?['content']?['parts']?[0]?['text'] ??
-          "No study plan returned.";
-    } else {
-      throw Exception(
-          '❌ Gemini API error: ${response.statusCode} ${response.body}');
-    }
+    return await _ask(prompt);
   }
 }
+

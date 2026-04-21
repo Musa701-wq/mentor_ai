@@ -85,7 +85,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => StudyPlannerProvider(geminiService: GeminiService(),)),
         ChangeNotifierProvider(create: (_) => HomeworkProvider()),
         ChangeNotifierProvider(create: (_) => HomeStatsProvider()..loadDashboard()),
-        ChangeNotifierProvider(create: (_) => IAPService())
+        ChangeNotifierProvider(create: (_) => IAPService()..init())
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

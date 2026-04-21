@@ -15,7 +15,7 @@ class IAPService extends ChangeNotifier {
   ];
 
   // Subscription ID
-  static const String subscriptionId = "com.vectorlabs.mentoraimonthlyplan";
+  static const String subscriptionId = "com.vectorlabs.monthlyplan";
 
   // All product IDs combined
   static Set<String> get allProductIds => {...creditIds, subscriptionId};
@@ -245,8 +245,14 @@ class IAPService extends ChangeNotifier {
     await FirebaseFirestore.instance.runTransaction((tx) async {
       final snapshot = await tx.get(docRef);
       final currentCredits = snapshot.data()?['credits'] ?? 0;
-      tx.update(docRef, {"credits": currentCredits + creditsToAdd});
+      tx.update(docRef, {
+        "credits": currentCredits + creditsToAdd,
+        "isPro": true, // ✅ Becomes Premium on purchase
+      });
     });
+
+    _isPro = true;
+    notifyListeners();
 
     debugPrint("✅ Firestore updated with $creditsToAdd credits for $uid");
   }

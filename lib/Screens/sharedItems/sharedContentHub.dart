@@ -42,7 +42,7 @@ class SharedContentHub extends StatelessWidget {
                 crossAxisCount: 2,
                 mainAxisSpacing: 20,
                 crossAxisSpacing: 20,
-                childAspectRatio: 0.85,
+                childAspectRatio: 0.78,
                 children: [
                   _buildOptionCard(
                     context: context,
@@ -142,7 +142,7 @@ class SharedContentHub extends StatelessWidget {
                         height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: TextStyle(
@@ -152,7 +152,7 @@ class SharedContentHub extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Text(

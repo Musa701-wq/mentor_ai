@@ -32,7 +32,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _loadUserCredits();
     _initializeIAP();
     _setupCreditsListener();
@@ -90,8 +90,25 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
   }
 
   void _initializeIAP() {
-    _iapService = IAPService(
-      onError: (error) {
+    _iapService = Provider.of<IAPService>(context, listen: false);
+    
+    // Ensure it's initialized (though main.dart does it, safety first)
+    _iapService.init().then((_) {
+      if (_iapService.errorMessage != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Store error: ${_iapService.errorMessage}'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    });
+
+    // Handle errors from the service
+    /* _iapService.onError = (error) {
+      if (mounted) {
         setState(() => _showFullScreenLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -99,19 +116,8 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
             backgroundColor: Colors.red,
           ),
         );
-      },
-    );
-
-    _iapService.init().then((_) {
-      if (_iapService.errorMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('IAP initialization failed: ${_iapService.errorMessage}'),
-            backgroundColor: Colors.orange,
-          ),
-        );
       }
-    });
+    }; */
   }
 
   Future<void> _requestReview() async {
@@ -198,24 +204,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
     );
   }
 
-  Future<void> _watchAdForCredits() async {
-    if (_isWatchingAd) return;
-    
-    setState(() => _isWatchingAd = true);
-    
-    try {
-      await AdService.showRewardedAd(context);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load ad: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() => _isWatchingAd = false);
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -245,16 +234,15 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
                 indicatorColor: Colors.purple,
                 tabs: const [
                   Tab(text: 'Store', icon: Icon(Icons.store)),
-                  Tab(text: 'Free Credits', icon: Icon(Icons.play_circle)),
                   Tab(text: 'FAQ', icon: Icon(Icons.help_outline)),
                 ],
+
               ),
             ),
             body: TabBarView(
               controller: _tabController,
               children: [
                 _buildStoreTab(isDark, screenWidth, screenHeight),
-                _buildFreeCreditsTab(isDark, screenWidth, screenHeight),
                 _buildFAQTab(isDark, screenWidth, screenHeight),
               ],
             ),
@@ -473,150 +461,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
     );
   }
 
-  Widget _buildFreeCreditsTab(bool isDark, double screenWidth, double screenHeight) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(screenWidth * 0.05),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text(
-            'Earn Free Credits',
-            style: TextStyle(
-              fontSize: screenWidth * 0.07,
-              fontWeight: FontWeight.w800,
-              color: Colors.purple,
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.01),
-          Text(
-            'Watch ads to earn credits and unlock AI features for free!',
-            style: TextStyle(
-              fontSize: screenWidth * 0.04,
-              color: Colors.grey[600],
-            ),
-          ),
-          SizedBox(height: screenHeight * 0.04),
-          
-          // Watch Ad Card
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(screenWidth * 0.06),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.green.shade400,
-                  Colors.green.shade600,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.play_circle_filled,
-                  size: screenWidth * 0.15,
-                  color: Colors.white,
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                const Text(
-                  'Watch Video Ad',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.01),
-                const Text(
-                  'Earn 5 credits by watching a short video ad',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: screenHeight * 0.03),
-                ElevatedButton(
-                  onPressed: _isWatchingAd ? null : _watchAdForCredits,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.green.shade600,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (_isWatchingAd) ...[
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text('Loading...'),
-                      ] else ...[
-                        const Icon(Icons.play_arrow),
-                        const SizedBox(width: 8),
-                        const Text('Watch Ad (+5 Credits)', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          SizedBox(height: screenHeight * 0.04),
-          
-          // Benefits Section
-          Container(
-            padding: EdgeInsets.all(screenWidth * 0.05),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.grey[800] : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue, size: screenWidth * 0.06),
-                    SizedBox(width: screenWidth * 0.03),
-                    Text(
-                      'How it works',
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.05,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                _buildBenefitItem(Icons.play_circle, 'Watch a 30-second video ad', screenWidth),
-                _buildBenefitItem(Icons.auto_awesome, 'Earn 5 credits instantly', screenWidth),
-                _buildBenefitItem(Icons.repeat, 'Available multiple times per day', screenWidth),
-                _buildBenefitItem(Icons.security, 'Safe and secure ads from Google', screenWidth),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildFAQTab(bool isDark, double screenWidth, double screenHeight) {
     return SingleChildScrollView(
@@ -651,15 +496,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
             screenHeight,
             isDark,
           ),
-          
-          _buildFAQItem(
-            'How do I earn free credits?',
-            'You can earn free credits by:\n• Watching rewarded video ads (+5 credits)',
-            Icons.card_giftcard,
-            screenWidth,
-            screenHeight,
-            isDark,
-          ),
+
           
           _buildFAQItem(
             'Do credits expire?',

@@ -12,6 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../Providers/homeStatsProvider.dart';
 import '../../Providers/profileProvider.dart';
 import '../../models/usermodel.dart';
+import 'DetailedAnalyticsScreen.dart';
 import '../purchaseScreen/creditPurchaseScreen.dart';
 import 'editProfileScreen.dart';
 import '../authwrapper.dart';
@@ -31,7 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   bool _isLoading = true;
-  int _userCredits = 150; // Placeholder for user credits
+  num _userCredits = 0; // Placeholder for user credits
   bool _isProUser = false;
   StreamSubscription? _proSubscription;
   User? _currentUser;
@@ -419,7 +420,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                   const SizedBox(height: 24),
                   _buildEnhancedProfileHeader(user, isDark, user.credits),
                   const SizedBox(height: 28),
-                  _buildProfileStats(isDark),
+                  _buildAnalyticsSection(isDark),
                   const SizedBox(height: 28),
                   _buildProfileInfoCard(user, isDark, context),
                   const SizedBox(height: 30),
@@ -451,7 +452,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildEnhancedProfileHeader(UserModel user, bool isDark, int credits) {
+  Widget _buildEnhancedProfileHeader(UserModel user, bool isDark, num credits) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -701,7 +702,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           ),
                           Text(
-                            "$credits credits",
+                            "${credits.toStringAsFixed(1)} credits",
                             style: const TextStyle(
                               fontSize: 14,
                               color: Colors.white,
@@ -876,47 +877,62 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildProfileStats(bool isDark) {
+  Widget _buildAnalyticsSection(bool isDark) {
     final stats = Provider.of<HomeStatsProvider>(context);
+    final completionRate = stats.totalPlans > 0
+        ? (stats.completedPlans / stats.totalPlans)
+        : 0.0;
 
     final items = [
       {
         "title": "Notes",
-        "value": stats.recommendedNotes.length.toString(),
+        "value": stats.totalNotes.toString(),
         "icon": Icons.note_rounded,
         "color": Colors.purple,
+        "subtitle": "Created",
+      },
+      {
+        "title": "Homework",
+        "value": stats.totalHomeworks.toString(),
+        "icon": Icons.assignment_turned_in_rounded,
+        "color": Colors.blue,
+        "subtitle": "Solved",
       },
       {
         "title": "Quizzes",
         "value": stats.totalQuizzes.toString(),
         "icon": Icons.quiz_rounded,
         "color": Colors.orange,
-      },
-      {
-        "title": "Plans",
-        "value": stats.totalPlans.toString(),
-        "icon": Icons.calendar_today_rounded,
-        "color": Colors.green,
+        "subtitle": "${stats.avgQuizScore.toStringAsFixed(0)}% Avg",
       },
       {
         "title": "Streak",
-        "value": "${stats.streakCount} days",
+        "value": stats.streakCount.toString(),
         "icon": Icons.local_fire_department_rounded,
         "color": Colors.red,
+        "subtitle": "Days",
       },
     ];
 
-    return Padding(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: LayoutBuilder(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 16),
+          child: Text(
+            'Learning Analytics',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.grey[800],
+            ),
+          ),
+        ),
+        LayoutBuilder(
           builder: (context, constraints) {
             final double maxWidth = constraints.maxWidth;
-            // Keep a grid look: 2 columns on phones, 3 on tablets and up
-            final int crossAxisCount = maxWidth < 600 ? 2 : 3;
-            // Slightly adjust aspect ratio to avoid clipping on smaller widths
-            final double childAspectRatio = maxWidth < 400
-                ? 1.9
-                : (maxWidth < 600 ? 1.7 : 1.6);
+            final int crossAxisCount = maxWidth < 600 ? 2 : 4;
+            final double childAspectRatio = maxWidth < 600 ? 1.5 : 1.2;
 
             return GridView.builder(
               shrinkWrap: true,
@@ -930,10 +946,10 @@ class _ProfileScreenState extends State<ProfileScreen>
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final item = items[index];
-                return _buildStatItem(
-                  context: context,
+                return _buildAnalyticsCard(
                   title: item["title"] as String,
                   value: item["value"] as String,
+                  subtitle: item["subtitle"] as String,
                   icon: item["icon"] as IconData,
                   color: item["color"] as Color,
                   isDark: isDark,
@@ -941,7 +957,157 @@ class _ProfileScreenState extends State<ProfileScreen>
               },
             );
           },
-        )
+        ),
+        const SizedBox(height: 16),
+        _buildStudyPlanProgress(completionRate, isDark),
+        const SizedBox(height: 16),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const DetailedAnalyticsScreen()),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: isDark ? Colors.grey[800] : Colors.white,
+            foregroundColor: const Color(0xFF6C63FF),
+            minimumSize: const Size(double.infinity, 48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            side: BorderSide(color: const Color(0xFF6C63FF).withOpacity(0.3)),
+          ),
+          child: const Text('View Detailed Analytics 📊', 
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnalyticsCard({
+    required String title,
+    required String value,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[200]!,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.grey[800],
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.grey[300] : Colors.grey[700],
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.grey[500] : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStudyPlanProgress(double rate, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[900] : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[200]!,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.trending_up_rounded, color: Colors.green, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Study Goal',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.grey[300] : Colors.grey[800],
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                '${(rate * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: rate,
+              minHeight: 10,
+              backgroundColor: isDark ? Colors.grey[800] : Colors.grey[100],
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1131,10 +1297,10 @@ class _ProfileScreenState extends State<ProfileScreen>
             Icons.trending_up,
             context,
           ),
-          if (stats.latestExamDate != null && stats.latestExamDate!.isNotEmpty)
+          if (stats.latestExamDate != null)
             _buildEnhancedDialogRow(
               'Next Exam',
-              stats.latestExamDate!,
+              stats.latestExamDate!.toLocal().toString().split(' ')[0],
               Icons.event,
               context,
             ),

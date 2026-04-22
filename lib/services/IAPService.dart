@@ -244,7 +244,7 @@ class IAPService extends ChangeNotifier {
 
     await FirebaseFirestore.instance.runTransaction((tx) async {
       final snapshot = await tx.get(docRef);
-      final currentCredits = snapshot.data()?['credits'] ?? 0;
+      final num currentCredits = snapshot.data()?['credits'] ?? 0;
       tx.update(docRef, {
         "credits": currentCredits + creditsToAdd,
         "isPro": true, // ✅ Becomes Premium on purchase

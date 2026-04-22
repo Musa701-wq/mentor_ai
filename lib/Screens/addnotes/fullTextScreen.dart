@@ -25,11 +25,11 @@ class FullTextScreen extends StatelessWidget {
           title,
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: isDark ? Colors.white : Colors.grey[800],
+            color: isDark ? Colors.white : Colors.grey[900],
           ),
         ),
-        backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-        foregroundColor: isDark ? Colors.white : Colors.grey[800],
+        backgroundColor: Colors.transparent,
+        foregroundColor: isDark ? Colors.white : Colors.grey[900],
         elevation: 0,
         centerTitle: false,
         actions: [
@@ -56,53 +56,48 @@ class FullTextScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Text stats
+            // Header Section with Stats
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: isDark ? Colors.grey[850] : Colors.grey[100],
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.purple.shade600,
+                    Colors.purple.shade800,
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(32),
+                  bottomRight: Radius.circular(32),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.purple.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(Icons.text_fields_rounded,
-                          size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$wordCount words',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
-                      Icon(Icons.article_rounded,
-                          size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${text.length} characters',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.timer_rounded,
-                          size: 16, color: Colors.grey.shade600),
-                      const SizedBox(width: 6),
-                      Text(
-                        '$readTime min read',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
+                      _buildStat(Icons.text_fields_rounded, '$wordCount words'),
+                      const SizedBox(width: 20),
+                      _buildStat(Icons.timer_rounded, '$readTime min read'),
                     ],
                   ),
                 ],
@@ -218,6 +213,23 @@ class FullTextScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildStat(IconData icon, String label) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.white70),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            color: Colors.white70,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

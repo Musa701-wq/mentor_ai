@@ -7,6 +7,7 @@ import '../models/notesModel.dart';
 import '../services/Firestore_service.dart';
 import '../services/geminiService.dart';
 import '../services/ocrService.dart';
+import '../services/creditService.dart';
 
 
 enum AddNoteState { idle, picking, ocrProcessing, confirming, saving, done, error }
@@ -34,6 +35,8 @@ class AddNoteProvider with ChangeNotifier {
     required this.firestoreService,
     required this.geminiService,
   });
+
+  final _creditsService = CreditsService();
 
 
 
@@ -123,6 +126,11 @@ class AddNoteProvider with ChangeNotifier {
       setState(AddNoteState.ocrProcessing);
       final s = await geminiService.summarize(content);
       summary = s;
+      // Dynamic credit deduction based on token usage
+      final tokens = geminiService.lastEstimatedTokens;
+      final cost = CreditsService.calcCreditsFromTokens(tokens);
+      await _creditsService.deductCredits(cost);
+      debugPrint('💳 Summary: deducted $cost credits ($tokens tokens)');
       setState(AddNoteState.confirming);
     } catch (e) {
       print(e);

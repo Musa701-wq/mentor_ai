@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/quizModel.dart';
+import '../services/creditService.dart';
 import '../services/geminiService.dart';
 
 class QuizQuestion {
@@ -19,6 +20,7 @@ class QuizQuestion {
 
 class QuizProvider with ChangeNotifier {
   final GeminiService geminiService;
+  final _creditsService = CreditsService();
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final String uid = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
 
@@ -67,6 +69,13 @@ class QuizProvider with ChangeNotifier {
           correctAnswer: correct,
         );
       }).toList();
+
+      // ─── Dynamic credit deduction based on token usage ───────────────
+      final tokens = geminiService.lastEstimatedTokens;
+      final cost = CreditsService.calcCreditsFromTokens(tokens);
+      await _creditsService.deductCredits(cost);
+      debugPrint('💳 Quiz: deducted $cost credits ($tokens tokens)');
+
     } catch (e) {
       _questions = [];
     } finally {

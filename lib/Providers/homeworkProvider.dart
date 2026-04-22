@@ -7,11 +7,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/Firestore_service.dart';
 import '../services/geminiService.dart';
 import '../services/ocrService.dart';
+import '../services/creditService.dart';
 
 class HomeworkProvider extends ChangeNotifier {
   final OcrService _ocrService = OcrService();
   final GeminiService _geminiService = GeminiService();
   final FirestoreService _firestoreService = FirestoreService();
+  final _creditsService = CreditsService();
 
   String? extractedText;
   String? steps;
@@ -37,10 +39,10 @@ class HomeworkProvider extends ChangeNotifier {
       steps = await _geminiService.chat(
         "Solve this homework question from the extracted text:\n$extractedText",
       );
-      
-      // 🚀 Auto-save in background
+      // Dynamic credit deduction
+      final tokens = _geminiService.lastEstimatedTokens;
+      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
-      
       return null; // Success
     } catch (e) {
       debugPrint('❌ Homework solving error: $e');
@@ -59,10 +61,10 @@ class HomeworkProvider extends ChangeNotifier {
       steps = await _geminiService.chat(
         "Solve this homework question from the extracted PDF text:\n$extractedText",
       );
-      
-      // 🚀 Auto-save in background
+      // Dynamic credit deduction
+      final tokens = _geminiService.lastEstimatedTokens;
+      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
-      
       return null;
     } catch (e) {
       debugPrint('❌ Homework solving error: $e');
@@ -81,10 +83,10 @@ class HomeworkProvider extends ChangeNotifier {
       steps = await _geminiService.chat(
         "Solve this homework question from the extracted document text:\n$extractedText",
       );
-      
-      // 🚀 Auto-save in background
+      // Dynamic credit deduction
+      final tokens = _geminiService.lastEstimatedTokens;
+      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
-      
       return null;
     } catch (e) {
       debugPrint('❌ Homework solving error: $e');
@@ -103,10 +105,10 @@ class HomeworkProvider extends ChangeNotifier {
       steps = await _geminiService.chat(
         "Solve this homework question:\n$text",
       );
-
-      // 🚀 Auto-save in background
+      // Dynamic credit deduction
+      final tokens = _geminiService.lastEstimatedTokens;
+      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
-
       return null;
     } catch (e) {
       debugPrint('❌ Homework solving error: $e');

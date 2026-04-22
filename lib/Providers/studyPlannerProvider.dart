@@ -3,11 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/geminiService.dart';
 import '../services/Firestore_service.dart';
+import '../services/creditService.dart';
 import 'dart:convert';
 
 class StudyPlannerProvider with ChangeNotifier {
   final GeminiService geminiService;
-   FirestoreService firestoreService = FirestoreService();
+  final _creditsService = CreditsService();
+  FirestoreService firestoreService = FirestoreService();
 
   bool isLoading = false;
   String? studyPlan;
@@ -36,6 +38,12 @@ class StudyPlannerProvider with ChangeNotifier {
         studyDaysPerWeek: studyDaysPerWeek,
         hoursPerDay: hoursPerDay,
       );
+
+      // ─── Dynamic credit deduction based on token usage ─────────────────
+      final tokens = geminiService.lastEstimatedTokens;
+      final cost = CreditsService.calcCreditsFromTokens(tokens);
+      await _creditsService.deductCredits(cost);
+      debugPrint('💳 StudyPlan: deducted $cost credits ($tokens tokens)');
 
       // Save to Firestore
       await firestoreService.saveStudyPlan({

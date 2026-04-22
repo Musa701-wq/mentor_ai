@@ -19,6 +19,8 @@ import 'addPlans/showPlanFeed.dart';
 import 'addQuiz/addQuiz.dart';
 import 'addQuiz/quizListScreen.dart';
 import 'addnotes/add_notes_screen.dart';
+import 'mindmap/mindmap_screen.dart';
+import 'mindmap/mindmap_screen.dart';
 import 'authwrapper.dart';
 import 'chatBuddyScreen.dart';
 import 'homeworkHelper/homeworkScreen.dart';
@@ -28,6 +30,7 @@ import 'notesFeed/showNotesDetail.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:marquee/marquee.dart';
+import 'syllabus/SyllabusHubScreen.dart';
 import 'purchaseScreen/specialOfferScreen.dart';
 
 
@@ -1443,6 +1446,19 @@ class HomeBody extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             children: [
               const SizedBox(width: 4),
+              _buildActionCard(
+                title: 'Auto Syllabus',
+                icon: Icons.auto_stories_rounded,
+                subtitle: 'Get roadmap',
+                colors: const [Color(0xFF6C63FF), Color(0xFF4A47A3)],
+                onTap: () {
+                  AdService.showInterstitialAndNavigate(
+                    context,
+                    const SyllabusHubScreen(),
+                  );
+                },
+                context: context,
+              ),
 
               _buildActionCard(
                 title: 'Create Study Plan',
@@ -1479,6 +1495,19 @@ class HomeBody extends StatelessWidget {
                   AdService.showInterstitialAndNavigate(
                     context,
                     AddNotesScreen(),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'AI Mindmap',
+                icon: Icons.account_tree_rounded,
+                subtitle: 'Visualize your notes',
+                colors: const [Color(0xFFE91E63), Color(0xFFC2185B)],
+                onTap: () {
+                  AdService.showInterstitialAndNavigate(
+                    context,
+                    MindmapScreen(),
                   );
                 },
                 context: context,
@@ -1623,6 +1652,7 @@ class HomeBody extends StatelessWidget {
       double screenHeight,
       ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isSmallScreen = screenWidth < 375;
 
     return Consumer<HomeStatsProvider>(
       builder: (context, stats, _) {
@@ -1679,7 +1709,7 @@ class HomeBody extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             SizedBox(
-              height: max(140, min(200, screenHeight * 0.22)),
+              height: isSmallScreen ? 145 : 160,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: statItems.length,
@@ -1740,7 +1770,10 @@ class HomeBody extends StatelessWidget {
             ),
           ],
         ),
-        padding: EdgeInsets.all(isTiny ? 10 : (isSmallScreen ? 12 : (isMediumScreen ? 14 : 16))),
+        padding: EdgeInsets.symmetric(
+          horizontal: isTiny ? 10 : (isSmallScreen ? 12 : 14),
+          vertical: 12,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1848,10 +1881,10 @@ class HomeBody extends StatelessWidget {
             Icons.local_fire_department,
             context,
           ),
-          if (stats.latestExamDate != null && stats.latestExamDate!.isNotEmpty)
+          if (stats.latestExamDate != null)
             _buildDialogRow(
               'Next Exam',
-              stats.latestExamDate!,
+              stats.latestExamDate!.toLocal().toString().split(' ')[0],
               Icons.event,
               context,
             ),

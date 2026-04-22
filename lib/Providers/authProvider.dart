@@ -37,7 +37,7 @@ class authProvider1 with ChangeNotifier {
             lastLogin: DateTime.now(),
             onboardingCompleted: false,
             keywords: const [],
-            credits: 500,
+            credits: 15,
           );
           await _firestoreService.saveUserProfile(created);
           userModel = created;

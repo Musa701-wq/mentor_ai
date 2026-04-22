@@ -21,7 +21,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
   final InAppReview _inAppReview = InAppReview.instance;
   late IAPService _iapService;
   late TabController _tabController;
-  int _userCredits = 0;
+  num _userCredits = 0;
   bool _isLoadingCredits = true;
   bool _showFullScreenLoading = false;
   bool _isWatchingAd = false;
@@ -138,7 +138,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
     }
   }
 
-  Future<void> _showSuccessDialog(String productName, int creditsAdded) async {
+  Future<void> _showSuccessDialog(String productName, num creditsAdded) async {
     await showDialog(
       context: context,
       barrierDismissible: false,
@@ -171,7 +171,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
             ),
             const SizedBox(height: 20),
             Text(
-              'Total Credits: ${_userCredits}',
+              'Total Credits: ${_userCredits.toStringAsFixed(1)}',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -586,7 +586,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
                         ),
                       )
                     : Text(
-                        '$_userCredits',
+                        '${_userCredits.toStringAsFixed(1)}',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: screenWidth * 0.07,
@@ -811,7 +811,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
       onTap: () async {
         setState(() => _showFullScreenLoading = true);
         
-        final initialCredits = _userCredits;
+        final num initialCredits = _userCredits;
         bool purchaseCompleted = false;
         
         void creditsListener() {
@@ -823,7 +823,7 @@ class _CreditsStoreScreenState extends State<CreditsStoreScreen> with TickerProv
               setState(() => _showFullScreenLoading = false);
               
               if (_userCredits > initialCredits) {
-                final creditsAdded = _userCredits - initialCredits;
+                final num creditsAdded = _userCredits - initialCredits;
                 _showSuccessDialog(product.title, creditsAdded);
               }
             }

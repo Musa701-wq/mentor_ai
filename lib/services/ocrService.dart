@@ -7,8 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
-
-
 class OcrService {
   final _recognizer = TextRecognizer(script: TextRecognitionScript.latin);
 
@@ -65,5 +63,17 @@ class OcrService {
 
   void dispose() {
     _recognizer.close();
+  }
+
+  /// Unified method for Syllabus text extraction
+  Future<String> extractTextFromSyllabus(File file) async {
+    final path = file.path.toLowerCase();
+    if (path.endsWith('.pdf')) {
+      final text = await extractTextFromPdf(file);
+      return text;
+    } else if (path.endsWith('.jpg') || path.endsWith('.jpeg') || path.endsWith('.png')) {
+      return await extractTextFromImage(file);
+    }
+    return '';
   }
 }

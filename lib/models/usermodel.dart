@@ -12,7 +12,7 @@ class UserModel {
   final DateTime? lastLogin;
   final bool onboardingCompleted;
   final List<String> keywords; // ✅ NEW
-  final int credits;
+  final num credits;
 
   UserModel({
     required this.uid,

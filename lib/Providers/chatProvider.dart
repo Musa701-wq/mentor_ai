@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../services/geminiService.dart';
+import '../services/creditService.dart';
 
 class ChatMessage {
   final String text;
@@ -34,6 +35,7 @@ class ChatMessage {
 
 class ChatProvider with ChangeNotifier {
   final GeminiService geminiService;
+  final _creditsService = CreditsService();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
 
@@ -93,6 +95,12 @@ class ChatProvider with ChangeNotifier {
 
       // 3. Get AI reply
       final replyText = await geminiService.chatWithContext(query, context);
+
+      // ─── Dynamic credit deduction based on token usage ─────────────────
+      final tokens = geminiService.lastEstimatedTokens;
+      final cost = CreditsService.calcCreditsFromTokens(tokens);
+      await _creditsService.deductCredits(cost);
+      debugPrint('💳 Chat: deducted $cost credits ($tokens tokens)');
 
       final aiMsg = ChatMessage(
         text: replyText,

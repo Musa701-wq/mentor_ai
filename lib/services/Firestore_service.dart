@@ -204,4 +204,48 @@ class FirestoreService {
       };
     }).toList();
   }
+
+  // ------------------- Syllabus -------------------
+  Future<void> addSyllabus(String uid, Map<String, dynamic> data) async {
+    await _firestore
+        .collection("users")
+        .doc(uid)
+        .collection("syllabuses")
+        .add(data);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchSyllabusesPaginated(
+    String uid, {
+    int limit = 10,
+    DocumentSnapshot? startAfterDoc,
+    String? searchQuery,
+  }) async {
+    Query query = _firestore
+        .collection("users")
+        .doc(uid)
+        .collection("syllabuses")
+        .orderBy("timestamp", descending: true)
+        .limit(limit);
+
+    if (startAfterDoc != null) {
+      query = query.startAfterDocument(startAfterDoc);
+    }
+
+    // 🔍 Basic search on "title"
+    if (searchQuery != null && searchQuery.trim().isNotEmpty) {
+      final end = searchQuery + '\uf8ff';
+      query = query.orderBy("title").startAt([searchQuery]).endAt([end]);
+    }
+
+    final snapshot = await query.get();
+
+    return snapshot.docs.map((doc) {
+      return {
+        ...doc.data() as Map<String, dynamic>,
+        "id": doc.id,
+        "snapshot": doc,
+      };
+    }).toList();
+  }
 }
+

@@ -66,12 +66,12 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
               'Note Details',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : Colors.grey[800],
+                color: isDark ? Colors.white : Colors.grey[900],
               ),
             ),
             elevation: 0,
-            backgroundColor: isDark ? Colors.grey[900] : Colors.white,
-            foregroundColor: isDark ? Colors.white : Colors.grey[800],
+            backgroundColor: Colors.transparent,
+            foregroundColor: isDark ? Colors.white : Colors.grey[900],
             centerTitle: false,
             actions: [
               IconButton(
@@ -152,177 +152,260 @@ class _NoteDetailScreenState extends State<NoteDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title
-                      _isEditing
-                          ? Container(
-                              decoration: BoxDecoration(
-                                color: cardColor,
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: isDark
-                                    ? null
-                                    : [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
-                                          blurRadius: 10,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: TextField(
-                                  controller: _titleController,
-                                  style: TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    color: textColor,
-                                    height: 1.3,
-                                  ),
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
-                                    hintText: 'Enter note title...',
-                                    hintStyle: TextStyle(
-                                      color: secondaryTextColor,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                  maxLines: null,
-                                ),
-                              ),
-                            )
-                          : Text(
-                              _titleController.text,
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w800,
-                                color: textColor,
-                                height: 1.3,
-                              ),
-                            ),
-                      const SizedBox(height: 16),
-
-                      // Tags
-                      if (_currentNote.tags.isNotEmpty)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _currentNote.tags
-                              .map((tag) => Container(
-                            decoration: BoxDecoration(
-                              color: accentColor.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            child: Text(
-                              tag,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: accentColor,
-                              ),
-                            ),
-                          ))
-                              .toList(),
-                        ),
-
-                      if (_currentNote.tags.isNotEmpty) const SizedBox(height: 24),
-
-                      // Content Card
                       Container(
+                        padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: isDark
-                              ? null
-                              : [
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              accentColor,
+                              accentColor.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
+                              color: accentColor.withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
                             ),
                           ],
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: _isEditing
-                              ? TextField(
-                            controller: _contentController,
-                            maxLines: null,
-                            style: TextStyle(
-                              fontSize: 16,
-                              height: 1.6,
-                              color: textColor,
-                            ),
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              hintText: 'Write your note content here...',
-                              hintStyle: TextStyle(color: secondaryTextColor),
-                            ),
-                          )
-                              : Text(
-                            _contentController.text,
-                            style: TextStyle(
-                              fontSize: 16,
-                              height: 1.6,
-                              color: textColor,
-                            ),
-                          ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (_isEditing)
+                              TextField(
+                                controller: _titleController,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  height: 1.2,
+                                ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Enter title...',
+                                  hintStyle: TextStyle(color: Colors.white70),
+                                ),
+                                maxLines: null,
+                              )
+                            else
+                              Text(
+                                _titleController.text,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: -0.5,
+                                  height: 1.2,
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                            if (_currentNote.tags.isNotEmpty)
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _currentNote.tags
+                                    .map((tag) => Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.white30),
+                                  ),
+                                  child: Text(
+                                    tag,
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ))
+                                    .toList(),
+                              ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: 12),
+
+                      // Sharer Profile (if shared)
+                      if (_currentNote.ownerName != null && _currentNote.ownerName!.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 18,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                child: Text(
+                                  _currentNote.ownerName![0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Shared by ${_currentNote.ownerName}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (_currentNote.ownerEmail != null)
+                                      Text(
+                                        _currentNote.ownerEmail!,
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
 
                       const SizedBox(height: 24),
+
+                      Text(
+                        "CONTENT",
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.purple.shade400,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.4 : 0.05),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                          ],
+                        ),
+                        child: _isEditing
+                            ? TextField(
+                                controller: _contentController,
+                                maxLines: null,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  height: 1.7,
+                                  color: textColor,
+                                ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: 'Write your note...',
+                                ),
+                              )
+                            : Text(
+                                _contentController.text,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  height: 1.7,
+                                  color: textColor,
+                                ),
+                              ),
+                      ),
+
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
               ),
 
-              // AI Summary Section
               if (_editedSummary != null && _editedSummary!.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(isDark ? 0.2 : 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.amber.withOpacity(0.3),
-                          width: 1,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "AI SUMMARY",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.amber.shade700,
+                            letterSpacing: 1.5,
+                          ),
                         ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.auto_awesome_rounded,
-                                    color: Colors.amber.shade700, size: 20),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'AI Summary',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.amber.shade700,
-                                  ),
-                                ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.amber.shade400,
+                                Colors.amber.shade600,
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _editedSummary!,
-                              style: TextStyle(
-                                fontSize: 15,
-                                height: 1.5,
-                                color: isDark ? Colors.amber.shade100 : Colors.grey[800],
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.amber.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 10),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    "Smart Overview",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _editedSummary!,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  height: 1.6,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 32),
+                      ],
                     ),
                   ),
                 ),

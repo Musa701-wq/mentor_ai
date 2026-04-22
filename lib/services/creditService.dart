@@ -11,8 +11,23 @@ class CreditsService {
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
+  // ─── Token-based pricing tiers ────────────────────────────────────────────
+  /// Returns credit cost based on token count.
+  /// 1000 tokens = 1 credit.
+  static num calcCreditsFromTokens(int tokens) {
+    return tokens / 1000.0;
+  }
+
+  /// Silently deduct credits after a successful AI call (no dialog).
+  /// Call this right after getting a response from GeminiService.
+  /// Returns true if deduction succeeded, false if insufficient credits.
+  Future<bool> deductForAiCall(int estimatedTokens) async {
+    final cost = calcCreditsFromTokens(estimatedTokens);
+    return deductCredits(cost);
+  }
+
   /// Deduct credits from current user
-  Future<bool> deductCredits(int amount) async {
+  Future<bool> deductCredits(num amount) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return false;
 
@@ -36,7 +51,7 @@ class CreditsService {
   /// Show confirmation dialog and deduct credits if confirmed
   static Future<bool> confirmAndDeductCredits({
     required BuildContext context,
-    required int cost,
+    required num cost,
     required String actionName,
     required Future<void> Function() onConfirmedAction,
   }) async {
@@ -46,7 +61,7 @@ class CreditsService {
       builder: (ctx) => CupertinoAlertDialog(
         title: const Text("Confirm Action"),
         content: Text(
-          "This action ($actionName) will deduct $cost credits.\nDo you want to continue?",
+          "This action ($actionName) will deduct ${cost.toStringAsFixed(2)} credits.\nDo you want to continue?",
         ),
         actions: [
           CupertinoDialogAction(
@@ -66,7 +81,7 @@ class CreditsService {
       builder: (ctx) => AlertDialog(
         title: const Text("Confirm Action"),
         content: Text(
-          "This action ($actionName) will deduct $cost credits.\nDo you want to continue?",
+          "This action ($actionName) will deduct ${cost.toStringAsFixed(2)} credits.\nDo you want to continue?",
         ),
         actions: [
           TextButton(

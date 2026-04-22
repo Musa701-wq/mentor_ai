@@ -284,6 +284,8 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 360;
     final isMediumScreen = screenWidth < 400;
+    final cardColor = isDark ? Colors.grey[850] : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.grey[800];
 
     // Responsive sizing values
     final double horizontalPadding = isSmallScreen ? 16.0 : 20.0;
@@ -1056,44 +1058,57 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
                                 child: SingleChildScrollView(
                                   child: Column(
                                     children: [
-                                      // Extracted text card
+                                      // Extracted Text Card
                                       Container(
-                                        decoration: BoxDecoration(
-                                          color: isDark ? Colors.grey[800] : Colors.grey[50],
-                                          borderRadius: BorderRadius.circular(16),
-                                        ),
                                         padding: EdgeInsets.all(elementSpacing),
+                                        decoration: BoxDecoration(
+                                          color: cardColor,
+                                          borderRadius: BorderRadius.circular(24),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                                              blurRadius: 20,
+                                              offset: const Offset(0, 10),
+                                            ),
+                                          ],
+                                        ),
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Text(
-                                                  'Extracted Text',
+                                                const Text(
+                                                  'EXTRACTED TEXT',
                                                   style: TextStyle(
-                                                      fontSize: isSmallScreen ? 16.0 : 18.0,
-                                                      fontWeight: FontWeight.bold),
+                                                      fontSize: 11,
+                                                      fontWeight: FontWeight.w900,
+                                                      color: Colors.purple,
+                                                      letterSpacing: 1.2),
                                                 ),
                                                 IconButton(
-                                                  icon: Icon(Icons.edit,
+                                                  icon: Icon(Icons.edit_note_rounded,
                                                       color: Colors.purple.shade600,
-                                                      size: isSmallScreen ? 18.0 : 24.0),
+                                                      size: 24),
                                                   onPressed: _editContentDialog,
                                                 ),
                                               ],
                                             ),
-                                            SizedBox(height: smallElementSpacing),
+                                            const SizedBox(height: 8),
                                             Text(
                                               p.content,
-                                              maxLines: 3,
+                                              maxLines: 4,
                                               overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(fontSize: isSmallScreen ? 13.0 : 15.0),
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                height: 1.5,
+                                                color: textColor,
+                                              ),
                                             ),
-                                            SizedBox(height: smallElementSpacing),
+                                            const SizedBox(height: 12),
                                             Align(
                                               alignment: Alignment.centerRight,
-                                              child: TextButton(
+                                              child: TextButton.icon(
                                                 onPressed: () {
                                                   Navigator.push(
                                                     context,
@@ -1103,18 +1118,11 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
                                                     ),
                                                   );
                                                 },
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text('See full',
-                                                        style: TextStyle(
-                                                            color: Colors.purple.shade600,
-                                                            fontSize: isSmallScreen ? 13.0 : 15.0)),
-                                                    SizedBox(width: 4),
-                                                    Icon(Icons.arrow_forward_rounded,
-                                                        size: isSmallScreen ? 14.0 : 16.0,
-                                                        color: Colors.purple.shade600),
-                                                  ],
+                                                icon: const Icon(Icons.fullscreen_rounded, size: 18),
+                                                label: const Text('View Full'),
+                                                style: TextButton.styleFrom(
+                                                  foregroundColor: Colors.purple.shade600,
+                                                  padding: const EdgeInsets.symmetric(horizontal: 16),
                                                 ),
                                               ),
                                             ),
@@ -1124,43 +1132,61 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
 
                                       SizedBox(height: elementSpacing),
 
-                                      // AI summary card (only show if summary exists)
+                                      // AI Summary Card
                                       if (p.summary != null)
                                         Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.purple.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(16),
-                                            border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                                          ),
                                           padding: EdgeInsets.all(elementSpacing),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                              colors: [
+                                                Colors.amber.shade400,
+                                                Colors.amber.shade600,
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(24),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.amber.withOpacity(0.3),
+                                                blurRadius: 20,
+                                                offset: const Offset(0, 10),
+                                              ),
+                                            ],
+                                          ),
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              Row(
+                                              const Row(
                                                 children: [
-                                                  Icon(Icons.auto_awesome_rounded,
-                                                      color: Colors.purple.shade700,
-                                                      size: isSmallScreen ? 18.0 : 24.0),
-                                                  SizedBox(width: smallElementSpacing),
+                                                  Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+                                                  SizedBox(width: 12),
                                                   Text(
-                                                    'AI Summary',
+                                                    'AI SUMMARY',
                                                     style: TextStyle(
-                                                        fontSize: isSmallScreen ? 16.0 : 18.0,
-                                                        fontWeight: FontWeight.bold),
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w900,
+                                                        color: Colors.white,
+                                                        letterSpacing: 1.1),
                                                   ),
                                                 ],
                                               ),
-                                              SizedBox(height: smallElementSpacing),
+                                              const SizedBox(height: 12),
                                               Text(
                                                 p.summary!,
-                                                maxLines: 3,
+                                                maxLines: 4,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(fontSize: isSmallScreen ? 13.0 : 15.0),
+                                                style: const TextStyle(
+                                                  fontSize: 15,
+                                                  height: 1.5,
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
-                                              SizedBox(height: smallElementSpacing),
+                                              const SizedBox(height: 12),
                                               Align(
                                                 alignment: Alignment.centerRight,
-                                                child: TextButton(
+                                                child: TextButton.icon(
                                                   onPressed: () {
                                                     Navigator.push(
                                                       context,
@@ -1170,18 +1196,10 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
                                                       ),
                                                     );
                                                   },
-                                                  child: Row(
-                                                    mainAxisSize: MainAxisSize.min,
-                                                    children: [
-                                                      Text('See full',
-                                                          style: TextStyle(
-                                                              color: Colors.purple.shade700,
-                                                              fontSize: isSmallScreen ? 13.0 : 15.0)),
-                                                      SizedBox(width: 4),
-                                                      Icon(Icons.arrow_forward_rounded,
-                                                          size: isSmallScreen ? 14.0 : 16.0,
-                                                          color: Colors.purple.shade700),
-                                                    ],
+                                                  icon: const Icon(Icons.fullscreen_rounded, color: Colors.white, size: 18),
+                                                  label: const Text('View Full', style: TextStyle(color: Colors.white)),
+                                                  style: TextButton.styleFrom(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 16),
                                                   ),
                                                 ),
                                               ),

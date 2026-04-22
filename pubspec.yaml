@@ -59,6 +59,9 @@ dependencies:
   app_tracking_transparency: ^2.0.6+1
   syncfusion_flutter_pdf: ^33.1.49
   marquee: ^2.3.0
+  graphview: ^1.5.1
+  screenshot: ^3.0.0
+  path_provider: ^2.1.5
 
 
 

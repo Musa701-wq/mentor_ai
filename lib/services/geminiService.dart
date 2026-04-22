@@ -3,22 +3,23 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../services/creditService.dart';
 
 class GeminiService {
   // Hosted Backend Configuration
   String get _baseUrl {
-    // 🚀 Automatically detect environment to avoid SocketException
     if (kIsWeb) return 'http://localhost:3000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:3000'; // Special IP for Android Emulator
-    return 'http://localhost:3000'; // iOS Simulator or Desktop
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
+    return 'http://localhost:3000';
   }
+
+  /// Estimated token count from the last API call (prompt + response) / 4
+  int _lastEstimatedTokens = 0;
+  int get lastEstimatedTokens => _lastEstimatedTokens;
 
   /// Centralized method to call the hosted Gemini API
   Future<String> _ask(String prompt) async {
     final url = Uri.parse('$_baseUrl/api/gemini');
-    
-    debugPrint('📤 Calling Hosted AI: $url');
-    // debugPrint('📦 Prompt: $prompt'); // Uncomment for deep debugging
 
     try {
       final response = await http.post(
@@ -29,7 +30,24 @@ class GeminiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        return _cleanResponse(data['result'] ?? "No result from AI.");
+        final result = _cleanResponse(data['result'] ?? "No result from AI.");
+
+        // Token estimation: 1 token ≈ 4 characters
+        final inputTokens  = prompt.length ~/ 4;
+        final outputTokens = result.length ~/ 4;
+        _lastEstimatedTokens = inputTokens + outputTokens;
+
+        // Credit cost based on total tokens
+        final creditCost = _calcCredits(_lastEstimatedTokens);
+
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        print('📤 INPUT  tokens  : $inputTokens  (${prompt.length} chars)');
+        print('📥 OUTPUT tokens  : $outputTokens  (${result.length} chars)');
+        print('🔢 TOTAL  tokens  : $_lastEstimatedTokens');
+        print('💳 CREDITS to deduct: $creditCost');
+        print('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        return result;
       } else {
         debugPrint('❌ Hosted API Error: ${response.statusCode} - ${response.body}');
         throw Exception('Error calling hosted model: ${response.body}');
@@ -38,6 +56,11 @@ class GeminiService {
       debugPrint('❌ Network / API Exception: $e');
       rethrow;
     }
+  }
+
+  /// Credit cost tiers (mirrors CreditsService.calcCreditsFromTokens)
+  num _calcCredits(int tokens) {
+    return CreditsService.calcCreditsFromTokens(tokens);
   }
 
   /// Removes unwanted formatting like asterisks and extra spaces
@@ -198,6 +221,97 @@ Return the study plan **strictly in valid JSON only**, with no explanations, com
 """;
 
     return await _ask(prompt);
+  }
+
+  /// Generate Mindmap data from text
+  Future<Map<String, dynamic>> generateMindmap(String text) async {
+    final prompt = """
+You are a Mindmap AI. Analyze the following text and create a mindmap structure.
+Extract the main topic and its subtopics, and define relationships (edges) between them.
+
+Text to analyze:
+$text
+
+Return the output STRICTLY as a JSON object, no explanations, no markdown. The JSON must have this exact structure:
+{
+  "nodes": [
+    {"id": "1", "label": "Main Topic"},
+    {"id": "2", "label": "Subtopic A"}
+  ],
+  "edges": [
+    {"from": "1", "to": "2"}
+  ]
+}
+Make sure 'id' is a string. Ensure the graph is logically connected like a tree.
+""";
+
+    String result = await _ask(prompt);
+    
+    // Clean JSON formatting if model returns markdown
+    result = result.replaceAll("```json", "").replaceAll("```", "").trim();
+
+    try {
+      return Map<String, dynamic>.from(json.decode(result));
+    } catch (e) {
+      debugPrint("❌ JSON parse error in Mindmap generation: $e\nRaw text: $result");
+      return {"nodes": [], "edges": []};
+    }
+  }
+
+  /// Breakdown Syllabus into a Roadmap
+  Future<Map<String, dynamic>> breakdownSyllabus(String syllabusText) async {
+    // Truncate text if it's too long to avoid payload issues
+    final String truncatedText = syllabusText.length > 30000 
+        ? "${syllabusText.substring(0, 30000)}... [Truncated for brevity]"
+        : syllabusText;
+
+    final prompt = """
+You are an Elite Academic Advisor and Curriculum Specialist. Your mission is to decompose the following syllabus into a master-class level study roadmap.
+
+Syllabus Text:
+$truncatedText
+
+Requirements for the Roadmap:
+1. **Strategic Overview**: Provide a professional title, a high-level summary, the overall **Difficulty Level** (e.g., Beginner, Intermediate, Expert), and any recommended **Prerequisites**.
+2. **Deep Categorization**: Group contents into logical chapters/modules.
+3. **Actionable Components**: For each chapter, provide:
+   - A clear **Learning Goal**.
+   - A list of detailed **Subtopics**.
+   - **Key Terminology** to master.
+   - Realistic **EstimatedHours**.
+4. **Pedagogical Flow**: Ensure the chapters are ordered chronologically for optimal learning.
+
+STRICT JSON OUTPUT ONLY (No markdown, no talk):
+{
+  "title": "Master Roadmap Title",
+  "description": "Comprehensive strategy overview.",
+  "difficulty": "Intermediate",
+  "prerequisites": ["Basic Knowledge of X", "Tool Y"],
+  "roadmap": [
+    {
+      "topic": "Chapter Title",
+      "learningGoal": "What the student will achieve.",
+      "estimatedHours": <number>,
+      "subtopics": ["Topic A", "Topic B"],
+      "keyTerms": ["Term 1", "Term 2"]
+    }
+  ],
+  "totalEstimatedHours": <number>,
+  "studyTip": "A professional tip for mastering this specific syllabus."
+}
+""";
+
+    String result = await _ask(prompt);
+    
+    // Clean JSON formatting if model returns markdown
+    result = result.replaceAll("```json", "").replaceAll("```", "").trim();
+
+    try {
+      return Map<String, dynamic>.from(json.decode(result));
+    } catch (e) {
+      debugPrint("❌ JSON parse error in Syllabus Breakdown: $e\nRaw text: $result");
+      return {"title": "Error", "roadmap": [], "totalEstimatedHours": 0};
+    }
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:student_ai/config/app_links.dart';
 import 'package:student_ai/Screens/addQuiz/quizSolveScreen.dart';
+import 'package:student_ai/Screens/addQuiz/quizAnalysisScreen.dart';
 import 'package:student_ai/services/adService.dart';
 import '../../routes.dart';
 
@@ -77,8 +78,7 @@ class _QuizListScreenState extends State<QuizListScreen> with RouteAware {
 
   @override
   void didPopNext() {
-    // Avoid auto-reloading when closing dialogs/popups.
-    // Keep state intact to prevent unexpected resets on lightweight overlays.
+    _loadAttemptedQuizIds();
   }
 
   void _fullResetAndReload() {
@@ -1263,9 +1263,44 @@ class QuizCard extends StatelessWidget {
         cost: CreditsConfig.openCompletedQuiz,
         actionName: "Open Completed Quiz",
         onConfirmedAction: () async {
-          AppNavigator.key.currentState?.push(
-            MaterialPageRoute(builder: (_) => QuizSolveScreen(quizId: quizId)),
-          );
+          final user = FirebaseAuth.instance.currentUser;
+          if (user == null) return;
+
+          // 🔍 Fetch the last attempt to show results
+          final attemptSnap = await FirebaseFirestore.instance
+              .collection("quizAttempts")
+              .where("quizId", isEqualTo: quizId)
+              .where("userId", isEqualTo: user.uid)
+              .orderBy("createdAt", descending: true)
+              .limit(1)
+              .get();
+
+          if (attemptSnap.docs.isNotEmpty) {
+            final attemptDoc = attemptSnap.docs.first;
+            final attemptId = attemptDoc.id;
+            final attemptData = attemptDoc.data();
+            
+            final questions = List<Map<String, dynamic>>.from(attemptData['questions'] ?? []);
+            final answers = List<String>.from(attemptData['answers'] ?? []);
+            final initialAnalysis = attemptData['analysis'] as Map<String, dynamic>?;
+
+            AppNavigator.key.currentState?.push(
+              MaterialPageRoute(
+                builder: (_) => QuizSolveScreen(
+                  quizId: quizId,
+                  isReadOnly: true,
+                  initialAnswers: answers,
+                  savedAnalysis: initialAnalysis,
+                  attemptId: attemptId,
+                ),
+              ),
+            );
+          } else {
+            // Fallback to solve if no attempt found
+            AppNavigator.key.currentState?.push(
+              MaterialPageRoute(builder: (_) => QuizSolveScreen(quizId: quizId)),
+            );
+          }
         },
       );
     } else {

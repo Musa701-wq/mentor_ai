@@ -32,10 +32,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:marquee/marquee.dart';
 import 'syllabus/SyllabusHubScreen.dart';
 import 'purchaseScreen/specialOfferScreen.dart';
+import 'addnotes/NotesCleanerScreen.dart';
+import 'flashcards/FlashcardHubScreen.dart';
+import 'flashcards/FlashcardGeneratorScreen.dart';
 
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialIndex;
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -53,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -731,6 +736,19 @@ class HomeBody extends StatelessWidget {
                   AdService.showInterstitialAndNavigate(
                     context,
                     AddNotesScreen(),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'Notes Cleaner',
+                icon: Icons.cleaning_services_rounded,
+                subtitle: 'Structure messy notes',
+                colors: const [Color(0xFF00C853), Color(0xFF1B5E20)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotesCleanerScreen()),
                   );
                 },
                 context: context,
@@ -1508,6 +1526,32 @@ class HomeBody extends StatelessWidget {
                   AdService.showInterstitialAndNavigate(
                     context,
                     MindmapScreen(),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'Notes Cleaner',
+                icon: Icons.cleaning_services_rounded,
+                subtitle: 'Structure messy notes',
+                colors: const [Color(0xFF00C853), Color(0xFF1B5E20)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotesCleanerScreen()),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'AI Flashcards',
+                icon: Icons.style_rounded,
+                subtitle: 'Generate study cards',
+                colors: const [Color(0xFFFF5252), Color(0xFFD32F2F)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const FlashcardHubScreen()),
                   );
                 },
                 context: context,

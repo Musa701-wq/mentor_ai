@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:student_ai/Screens/home.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/animation.dart';
@@ -117,7 +118,11 @@ class _ManualQuizScreenState extends State<ManualQuizScreen>
       setState(() {
         _showConfetti = false;
       });
-      Navigator.pop(context);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen(initialIndex: 2)),
+        (route) => false,
+      );
     }
   }
 

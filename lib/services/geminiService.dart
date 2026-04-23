@@ -271,33 +271,44 @@ You are an Elite Academic Advisor and Curriculum Specialist. Your mission is to 
 Syllabus Text:
 $truncatedText
 
-Requirements for the Roadmap:
-1. **Strategic Overview**: Provide a professional title, a high-level summary, the overall **Difficulty Level** (e.g., Beginner, Intermediate, Expert), and any recommended **Prerequisites**.
-2. **Deep Categorization**: Group contents into logical chapters/modules.
-3. **Actionable Components**: For each chapter, provide:
+Requirements:
+1. **Strategic Overview**: Professional title, high-level summary, difficulty, and prerequisites.
+2. **Day-wise Breakdown**: Organize into clear "Day X" or "Chapter X" milestones.
+3. **Structured Content**: For each milestone, provide:
    - A clear **Learning Goal**.
-   - A list of detailed **Subtopics**.
-   - **Key Terminology** to master.
-   - Realistic **EstimatedHours**.
-4. **Pedagogical Flow**: Ensure the chapters are ordered chronologically for optimal learning.
+   - **detailedTopics**: A list of objects, each containing:
+     - `topicTitle`: Short, punchy name.
+     - `explanation`: Clear, sufficient study material.
+     - `example`: A real-time, practical example.
+     - `formulaOrRule`: Any relevant formula, grammar rule, or key takeaway (optional).
+   - **keyTerms**: Essential vocabulary.
+   - **estimatedHours**.
 
-STRICT JSON OUTPUT ONLY (No markdown, no talk):
+Ensure the content is vibrant, easy to read, and formatted specifically for a modern mobile learning app.
+
+STRICT JSON OUTPUT ONLY:
 {
   "title": "Master Roadmap Title",
-  "description": "Comprehensive strategy overview.",
+  "description": "Short, professional summary.",
   "difficulty": "Intermediate",
-  "prerequisites": ["Basic Knowledge of X", "Tool Y"],
+  "prerequisites": ["Prereq 1"],
   "roadmap": [
     {
-      "topic": "Chapter Title",
-      "learningGoal": "What the student will achieve.",
-      "estimatedHours": <number>,
-      "subtopics": ["Topic A", "Topic B"],
-      "keyTerms": ["Term 1", "Term 2"]
+      "topic": "Day 1: Topic Name",
+      "learningGoal": "Goal summary.",
+      "estimatedHours": 2,
+      "detailedTopics": [
+        {
+          "topicTitle": "Sub-topic 1",
+          "explanation": "Detailed explanation...",
+          "example": "Practical example...",
+          "formulaOrRule": "Rule or Formula (if applicable)"
+        }
+      ],
+      "keyTerms": ["Term 1"],
     }
   ],
-  "totalEstimatedHours": <number>,
-  "studyTip": "A professional tip for mastering this specific syllabus."
+  "studyTip": "A professional tip."
 }
 """;
 
@@ -311,6 +322,156 @@ STRICT JSON OUTPUT ONLY (No markdown, no talk):
     } catch (e) {
       debugPrint("❌ JSON parse error in Syllabus Breakdown: $e\nRaw text: $result");
       return {"title": "Error", "roadmap": [], "totalEstimatedHours": 0};
+    }
+  }
+
+  /// 🧹 Notes Cleaner: Converts messy notes into structured study notes
+  Future<String> cleanNotes(String messyNotes) async {
+    final prompt = """
+You are a Professional Note-Taking Expert. Your task is to transform the following messy, unorganized, or redundant notes into a clean, highly structured, and professional study document.
+
+Messy Notes:
+$messyNotes
+
+Guidelines for Transformation:
+1. **Clarity & Conciseness**: Remove all redundant words, irrelevant filler, and conversational fluff.
+2. **Formatting (Clean View)**: 
+   - Do NOT use symbols like #, ##, or * for emphasis or headers.
+   - For **Headings**, use UPPERCASE text on a new line followed by a blank line.
+   - For **Subheadings**, use Title Case text on a new line followed by a blank line.
+   - Use bullet points (•) for lists.
+3. **Structure**: 
+   - Start with a clear Title in ALL CAPS.
+   - Organize logically into sections with clear spacing between them.
+   - Include a "KEY CONCEPTS" section at the end if applicable.
+4. **Tone**: Maintain a professional, educational tone throughout.
+
+STRICT INSTRUCTION: Do NOT include any introductory or concluding remarks. Provide ONLY the structured notes content.
+""";
+
+    String response = await _ask(prompt);
+    // Extra safety: remove any stray hashes or asterisks the model might still produce
+    return response.replaceAll('#', '').replaceAll('*', '').trim();
+  }
+
+  /// ✍️ Handwriting Optimizer: Refines messy OCR from handwritten notes
+  Future<String> polishHandwritingOCR(String messyOcrText) async {
+    final prompt = """
+You are an expert at deciphering and organizing handwritten notes. The following text was extracted using OCR from a photo of handwritten notes. It likely contains many misread characters, spelling errors, and missing logical flow.
+
+Messy OCR Text:
+$messyOcrText
+
+Your Mission:
+1. **Decode & Correct**: Use the context to fix misread words and spelling errors.
+2. **Structure**: Organize the corrected text into a clean, professional format.
+3. **Format**: 
+   - For **Headings**, use UPPERCASE text.
+   - Use bullet points (•) for lists.
+   - NO symbols like #, ##, or * should be used.
+4. **Style**: If some parts are unintelligible, try to logically bridge them or focus on the clear parts to maintain useful information.
+
+STRICT INSTRUCTION: Provide ONLY the corrected and structured notes. Do not include any meta-comments or introductory text.
+""";
+
+    String response = await _ask(prompt);
+    return response.replaceAll('#', '').replaceAll('*', '').trim();
+  }
+
+  /// 📇 Flashcard Generator: Creates Q&A pairs from content
+  Future<List<Map<String, String>>> generateFlashcards(String content, String difficulty) async {
+    final prompt = """
+You are an expert Educational Content Creator. Your task is to generate high-quality study flashcards from the provided content.
+
+Content:
+$content
+
+Difficulty Level: $difficulty
+
+Instructions:
+1. **Q&A Pairs**: Create clear, concise question-answer pairs.
+2. **Focus**: Target key concepts, definitions, formulas, and historical dates.
+3. **Format**: Return ONLY a valid JSON array of objects. Each object must have "question" and "answer" keys.
+4. **Quantity**: Aim for 5-10 cards depending on content depth.
+5. **No Markup**: Do not include any introductory text or markdown code blocks (like ```json). Just the raw JSON.
+
+Example Output:
+[
+  {"question": "What is Photosynthesis?", "answer": "The process by which plants use sunlight, water, and CO2 to create oxygen and energy in the form of sugar."},
+  {"question": "Who discovered Penicillin?", "answer": "Alexander Fleming in 1928."}
+]
+""";
+
+    String response = await _ask(prompt);
+    
+    // Clean potential markdown blocks
+    response = response.replaceAll('```json', '').replaceAll('```', '').trim();
+    
+    try {
+      final List<dynamic> decoded = jsonDecode(response);
+      return decoded.map((item) => {
+        "question": item["question"].toString(),
+        "answer": item["answer"].toString(),
+      }).toList();
+    } catch (e) {
+      debugPrint('Flashcard generation parsing error: $e. Raw response: $response');
+      throw Exception('Failed to generate flashcards structure.');
+    }
+  }
+
+  /// 📊 Quiz Analysis: Analyzes quiz performance and provides insights
+  Future<Map<String, dynamic>> analyzeQuizPerformance({
+    required List<Map<String, dynamic>> questions,
+    required List<String> userAnswers,
+  }) async {
+    final performanceData = questions.asMap().entries.map((entry) {
+      final idx = entry.key;
+      final q = entry.value;
+      final userAnswer = userAnswers[idx];
+      return {
+        "question": q["question"],
+        "userAnswer": userAnswer,
+        "correctAnswer": q["correctAnswer"],
+        "isCorrect": userAnswer == q["correctAnswer"],
+      };
+    }).toList();
+
+    final prompt = """
+You are an Advanced Learning Strategist AI. Analyze the following quiz performance data and provide a concise, high-impact feedback report focused on improvement.
+
+Quiz Data:
+${jsonEncode(performanceData)}
+
+Instructions:
+1. **Mistake Analysis**: For each wrong answer, explain the core concept missed and provide a brief, helpful explanation.
+2. **Key Weaknesses**: Identify the primary areas where the user struggled.
+3. **Topics to Re-visit**: Identify 3-5 specific topics or subtopics for immediate review.
+4. **Actionable Recommendations**: Provide sharp, actionable steps for improvement.
+
+STRICT JSON OUTPUT ONLY:
+{
+  "mistakeAnalysis": [
+    {"question": "...", "conceptMissed": "...", "explanation": "..."}
+  ],
+  "weaknesses": ["topicA", "topicB"],
+  "topicsToRevisit": ["Detailed topic 1", "Detailed topic 2"],
+  "recommendations": ["Action step 1", "Action step 2"]
+}
+""";
+
+    String result = await _ask(prompt);
+    result = result.replaceAll("```json", "").replaceAll("```", "").trim();
+
+    try {
+      return Map<String, dynamic>.from(json.decode(result));
+    } catch (e) {
+      debugPrint("❌ JSON parse error in Quiz Analysis: $e\\nRaw text: \$result");
+      return {
+        "mistakeAnalysis": [],
+        "weaknesses": [],
+        "topicsToRevisit": ["Review your primary materials."],
+        "recommendations": ["Review your incorrect answers for deeper understanding."]
+      };
     }
   }
 }

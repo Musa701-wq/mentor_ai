@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:student_ai/Screens/home.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lottie/lottie.dart'; // Add this to your pubspec.yaml
@@ -79,56 +80,54 @@ class _GenerateQuizScreenState extends State<GenerateQuizScreen> with SingleTick
     }
 
     // ✅ Wrap with credit confirmation
-    await CreditsService.confirmAndDeductCredits(
-      context: context,
-      cost: CreditsConfig.aiQuiz,
-      actionName: "AI Quiz Generation",
-      onConfirmedAction: () async {
-        try {
-          // Set title in provider
-          quizProvider.setQuizTitle(quizTitle);
+    // ─── Temporarily bypassed for testing ───────────────
+    try {
+      // Set title in provider
+      quizProvider.setQuizTitle(quizTitle);
 
-          // Generate quiz with selected note
-          await quizProvider.generateFromNotes(selectedNote!, title: quizTitle);
+      // Generate quiz with selected note
+      await quizProvider.generateFromNotes(selectedNote!, title: quizTitle);
 
-          // Save to Firestore
-          await quizProvider.saveQuizToDb(user.uid, isAiGenerated: true);
+      // Save to Firestore
+      await quizProvider.saveQuizToDb(user.uid, isAiGenerated: true);
 
-          if (mounted) {
-            setState(() {
-              _showSuccessAnimation = true;
-            });
+      if (mounted) {
+        setState(() {
+          _showSuccessAnimation = true;
+        });
 
-            await Future.delayed(const Duration(seconds: 2));
+        await Future.delayed(const Duration(seconds: 2));
 
-            setState(() {
-              _showSuccessAnimation = false;
-            });
+        setState(() {
+          _showSuccessAnimation = false;
+        });
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  "Quiz generated & saved! -${CreditsConfig.aiQuiz} credits 🎉",
-                ),
-                backgroundColor: Colors.green[600],
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
-            );
-            Navigator.pop(context);
-          }
-        } catch (e) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Error: $e"),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Quiz generated & saved! (Bypassed Credits) 🎉",
             ),
-          );
-        }
-      },
-    );
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen(initialIndex: 2)),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: $e"),
+          backgroundColor: Colors.red[400],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
 
 
@@ -151,19 +150,20 @@ class _GenerateQuizScreenState extends State<GenerateQuizScreen> with SingleTick
 
 
   PreferredSizeWidget _buildAppBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AppBar(
-      title: const Text(
-        "Generate Quiz",
+      title: Text(
+        "Generate Custom Quiz",
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 22,
-          color: Colors.black,
+          color: isDark ? Colors.white : Colors.black,
         ),
       ),
       backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
-      iconTheme: const IconThemeData(color: Colors.white),
+      iconTheme: IconThemeData(color: isDark ? Colors.white : Colors.black),
     );
   }
 

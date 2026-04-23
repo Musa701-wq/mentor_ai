@@ -21,6 +21,7 @@ import 'Providers/profileProvider.dart';
 import 'Providers/studyPlannerProvider.dart';
 import 'Providers/mindmapProvider.dart';
 import 'Providers/SyllabusProvider.dart';
+import 'Providers/flashcardProvider.dart';
 import 'Screens/authwrapper.dart';
 import 'firebase_options.dart'; // Make sure you have this generated
 import 'routes.dart';
@@ -89,7 +90,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HomeworkProvider()),
         ChangeNotifierProvider(create: (_) => HomeStatsProvider()..loadDashboard()),
         ChangeNotifierProvider(create: (_) => SyllabusProvider()),
-        ChangeNotifierProvider(create: (_) => IAPService()..init())
+        ChangeNotifierProvider(create: (_) => IAPService()..init()),
+        ChangeNotifierProvider(create: (_) => FlashcardProvider()..loadDecks()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

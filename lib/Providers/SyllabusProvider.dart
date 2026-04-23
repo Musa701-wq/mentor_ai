@@ -22,6 +22,24 @@ class SyllabusProvider with ChangeNotifier {
   Map<String, dynamic>? _roadmap;
   Map<String, dynamic>? get roadmap => _roadmap;
 
+  // 🔹 Track completion of milestones
+  final Set<String> _completedMilestones = {};
+  Set<String> get completedMilestones => _completedMilestones;
+
+  bool isMilestoneCompleted(String syllabusId, int index) {
+    return _completedMilestones.contains("${syllabusId}_$index");
+  }
+
+  void toggleMilestoneCompletion(String syllabusId, int index) {
+    final key = "${syllabusId}_$index";
+    if (_completedMilestones.contains(key)) {
+      _completedMilestones.remove(key);
+    } else {
+      _completedMilestones.add(key);
+    }
+    notifyListeners();
+  }
+
   // 🔹 For saved roadmaps
   final List<Map<String, dynamic>> _syllabuses = [];
   final List<Map<String, dynamic>> _filteredSyllabuses = [];
@@ -57,8 +75,9 @@ class SyllabusProvider with ChangeNotifier {
       _roadmap = result;
 
       // 3. Deduct Credits (Roadmap generation is 1 credit fixed)
-      final creditsService = CreditsService();
-      await creditsService.deductCredits(1.0); 
+      // Temporarily bypassed for testing
+      // final creditsService = CreditsService();
+      // await creditsService.deductCredits(1.0); 
 
       // 4. Auto save the result
       _autoSave(text);

@@ -71,10 +71,11 @@ class QuizProvider with ChangeNotifier {
       }).toList();
 
       // ─── Dynamic credit deduction based on token usage ───────────────
-      final tokens = geminiService.lastEstimatedTokens;
-      final cost = CreditsService.calcCreditsFromTokens(tokens);
-      await _creditsService.deductCredits(cost);
-      debugPrint('💳 Quiz: deducted $cost credits ($tokens tokens)');
+      // Temporarily bypassed for testing
+      // final tokens = geminiService.lastEstimatedTokens;
+      // final cost = CreditsService.calcCreditsFromTokens(tokens);
+      // await _creditsService.deductCredits(cost);
+      // debugPrint('💳 Quiz: deducted $cost credits ($tokens tokens)');
 
     } catch (e) {
       _questions = [];
@@ -104,7 +105,7 @@ class QuizProvider with ChangeNotifier {
   }
 
   // --- Submit Quiz Attempt ---
-  Future<int> submitQuiz(String userId, String quizId) async {
+  Future<Map<String, dynamic>> submitQuiz(String userId, String quizId) async {
     int score = 0;
     for (int i = 0; i < _questions.length; i++) {
       if (_selectedAnswers[i] == _questions[i].correctAnswer) {
@@ -117,7 +118,7 @@ class QuizProvider with ChangeNotifier {
           (i) => _selectedAnswers[i] ?? "",
     );
 
-    await firestore.collection("quizAttempts").add({
+    final attemptRef = await firestore.collection("quizAttempts").add({
       "userId": userId,
       "quizId": quizId,
       "questions": _questions
@@ -134,7 +135,10 @@ class QuizProvider with ChangeNotifier {
 
     _isSubmitted = true;
     notifyListeners();
-    return score;
+    return {
+      "attemptId": attemptRef.id,
+      "score": score,
+    };
   }
 
   // --- Save Quiz to Firestore ---

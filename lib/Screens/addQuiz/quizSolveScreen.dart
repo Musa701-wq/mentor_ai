@@ -5,10 +5,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../Providers/quizProvider.dart';
 import 'quizSuccessScreen.dart';
+import 'quizAnalysisScreen.dart';
 
 class QuizSolveScreen extends StatefulWidget {
   final String quizId;
-  const QuizSolveScreen({super.key, required this.quizId});
+  final bool isReadOnly;
+  final List<String>? initialAnswers;
+  final Map<String, dynamic>? savedAnalysis;
+  final String? attemptId;
+
+  const QuizSolveScreen({
+    super.key, 
+    required this.quizId,
+    this.isReadOnly = false,
+    this.initialAnswers,
+    this.savedAnalysis,
+    this.attemptId,
+  });
 
   @override
   State<QuizSolveScreen> createState() => _QuizSolveScreenState();
@@ -17,6 +30,23 @@ class QuizSolveScreen extends StatefulWidget {
 class _QuizSolveScreenState extends State<QuizSolveScreen> {
   bool _loadingQuestions = true;
   int _currentIndex = 0;
+  
+  final List<Color> _questionColors = [
+    const Color(0xFF6C63FF), // Indigo
+    const Color(0xFFFF6B6B), // Coral
+    const Color(0xFF20BF6B), // Green
+    const Color(0xFFF7B731), // Orange
+    const Color(0xFF0FB9B1), // Teal
+    const Color(0xFF8854D0), // Purple
+    const Color(0xFF4B7BEC), // Blue
+    const Color(0xFFFA8231), // Deep Orange
+    const Color(0xFF26DE81), // Light Green
+    const Color(0xFFEB3B5A), // Red
+  ];
+
+  Color _getCurrentColor() {
+    return _questionColors[_currentIndex % _questionColors.length];
+  }
 
   @override
   void initState() {
@@ -45,6 +75,12 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
       ..resetQuiz()
       ..questions.clear()
       ..questions.addAll(questions);
+
+    if (widget.isReadOnly && widget.initialAnswers != null) {
+      for (int i = 0; i < widget.initialAnswers!.length; i++) {
+        provider.selectAnswer(i, widget.initialAnswers![i]);
+      }
+    }
 
     setState(() {
       _loadingQuestions = false;
@@ -141,14 +177,33 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
     final provider = Provider.of<QuizProvider>(context, listen: false);
     final userId = FirebaseAuth.instance.currentUser?.uid ?? "guest";
 
-    final score = await provider.submitQuiz(userId, widget.quizId);
-    // Navigate to a themed success screen, wait 5s there, then return
+    final result = await provider.submitQuiz(userId, widget.quizId);
+    final score = result['score'] as int;
+    final attemptId = result['attemptId'] as String;
+    
+    // Prepare question data for analysis
+    final List<Map<String, dynamic>> questionsData = provider.questions.map((q) => {
+      "question": q.question,
+      "correctAnswer": q.correctAnswer,
+      "options": q.options,
+    }).toList();
+    
+    final List<String> answersData = List.generate(
+      provider.questions.length,
+      (i) => provider.selectedAnswers[i] ?? "",
+    );
+
+    // Navigate to a themed success screen
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => QuizSuccessScreen(
           score: score,
           total: provider.questions.length,
+          questions: questionsData,
+          answers: answersData,
+          quizId: widget.quizId,
+          attemptId: attemptId,
         ),
       ),
     );
@@ -156,6 +211,34 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
     if (!mounted) return;
     // After success screen auto-closes, move back to previous screen
     Navigator.pop(context);
+  }
+
+  void _navigateToAnalysis(BuildContext context, QuizProvider provider) {
+    // Prepare question data for analysis
+    final List<Map<String, dynamic>> questionsData = provider.questions.map((q) => {
+      'question': q.question,
+      'answer': q.correctAnswer,
+      'correctAnswer': q.correctAnswer,
+      'options': q.options,
+    }).toList();
+
+    final List<String> answersData = List.generate(
+      provider.questions.length,
+      (i) => provider.selectedAnswers[i] ?? "",
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuizAnalysisScreen(
+          questions: questionsData,
+          answers: answersData,
+          quizId: widget.quizId,
+          attemptId: widget.attemptId,
+          initialAnalysis: widget.savedAnalysis,
+        ),
+      ),
+    );
   }
 
   @override
@@ -184,20 +267,20 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
             ),
             elevation: 0,
             backgroundColor: Colors.white,
-            foregroundColor: const Color(0xFF6C63FF),
+            foregroundColor: _getCurrentColor(),
             centerTitle: true,
-            iconTheme: const IconThemeData(color: Color(0xFF6C63FF)),
+            iconTheme: IconThemeData(color: _getCurrentColor()),
           ),
           body: GestureDetector(
             onTap: () => FocusScope.of(context).unfocus(),
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFFF5F5FF),
-                    Color(0xFFE6E6FF),
+                    _getCurrentColor().withOpacity(0.05),
+                    _getCurrentColor().withOpacity(0.12),
                   ],
                 ),
               ),
@@ -229,7 +312,7 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
                                   ? 0
                                   : (answered / provider.questions.length),
                               backgroundColor: Colors.grey[200],
-                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF6C63FF)),
+                              valueColor: AlwaysStoppedAnimation<Color>(_getCurrentColor()),
                               minHeight: 8,
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -260,9 +343,11 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
                               question: q.question,
                               options: q.options,
                               selectedAnswer: selected,
-                              correctAnswer: provider.isSubmitted ? q.correctAnswer : null,
+                              themeColor: _getCurrentColor(),
+                              isReadOnly: widget.isReadOnly,
+                              correctAnswer: (provider.isSubmitted || widget.isReadOnly) ? q.correctAnswer : null,
                               onSelect: (val) {
-                                if (!provider.isSubmitted) {
+                                if (!provider.isSubmitted && !widget.isReadOnly) {
                                   provider.selectAnswer(_currentIndex, val);
                                 }
                               },
@@ -292,12 +377,12 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
                                   foregroundColor: const Color(0xFF6C63FF),
                                   elevation: 0,
                                 ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.arrow_back, size: 18),
-                                    SizedBox(width: 6),
-                                    Text("Previous"),
+                                    Icon(Icons.arrow_back, size: 16),
+                                    SizedBox(width: 4),
+                                    Text("Prev", style: TextStyle(fontSize: 14)),
                                   ],
                                 ),
                               ),
@@ -306,11 +391,11 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
                             const SizedBox(width: 140),
 
                           Text(
-                            "Question ${_currentIndex + 1}/${provider.questions.length}",
-                            style: const TextStyle(
+                            "${_currentIndex + 1}/${provider.questions.length}",
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF6C63FF),
+                              color: _getCurrentColor(),
                             ),
                           ),
 
@@ -330,12 +415,34 @@ class _QuizSolveScreenState extends State<QuizSolveScreen> {
                                   foregroundColor: Colors.white,
                                   elevation: 4,
                                 ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text("Next", style: TextStyle(fontSize: 14)),
+                                    SizedBox(width: 4),
+                                    Icon(Icons.arrow_forward, size: 16),
+                                  ],
+                                ),
+                              ),
+                            )
+                          else if (widget.isReadOnly)
+                            SizedBox(
+                              width: 140,
+                              child: ElevatedButton(
+                                onPressed: () => _navigateToAnalysis(context, provider),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  backgroundColor: const Color(0xFF6C63FF),
+                                  foregroundColor: Colors.white,
+                                  elevation: 4,
+                                ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text("Next"),
+                                    Icon(Icons.bar_chart_rounded, size: 18),
                                     SizedBox(width: 6),
-                                    Icon(Icons.arrow_forward, size: 18),
+                                    Text("Analysis"),
                                   ],
                                 ),
                               ),
@@ -383,15 +490,19 @@ class StyledQuestionTile extends StatelessWidget {
   final List<String> options;
   final String? selectedAnswer;
   final String? correctAnswer;
+  final Color themeColor;
   final Function(String) onSelect;
+  final bool isReadOnly;
 
   const StyledQuestionTile({
     super.key,
     required this.question,
     required this.options,
     required this.onSelect,
+    required this.themeColor,
     this.selectedAnswer,
     this.correctAnswer,
+    this.isReadOnly = false,
   });
 
   @override
@@ -399,13 +510,21 @@ class StyledQuestionTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            themeColor.withOpacity(0.12),
+            themeColor.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: themeColor.withOpacity(0.15), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
+            color: themeColor.withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -446,15 +565,15 @@ class StyledQuestionTile extends StatelessWidget {
                     trailingColor = Colors.red;
                   }
                 } else if (isSelected) {
-                  borderColor = const Color(0xFF6C63FF);
-                  fillColor = const Color(0xFF6C63FF).withOpacity(0.08);
+                  borderColor = themeColor;
+                  fillColor = themeColor.withOpacity(0.08);
                 }
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: correctAnswer != null ? null : () => onSelect(option),
+                    onTap: (correctAnswer != null || isReadOnly) ? null : () => onSelect(option),
                     child: Container(
                       decoration: BoxDecoration(
                         color: fillColor,

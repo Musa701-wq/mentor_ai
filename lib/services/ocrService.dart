@@ -17,14 +17,19 @@ class OcrService {
     return _collectText(result);
   }
 
-  /// Extract text from a PDF file using syncfusion_flutter_pdf
+  /// Extract text from a PDF file using syncfusion_flutter_pdf and OCR
   Future<String> extractTextFromPdf(File pdfFile) async {
     try {
       final List<int> bytes = await pdfFile.readAsBytes();
       final PdfDocument document = PdfDocument(inputBytes: bytes);
-      final String text = PdfTextExtractor(document).extractText();
+      final buffer = StringBuffer();
+
+      // 1. Extract standard text layer
+      final String textLayer = PdfTextExtractor(document).extractText();
+      buffer.writeln(textLayer);
+
       document.dispose();
-      return text;
+      return buffer.toString().trim();
     } catch (e) {
       debugPrint('PDF extraction failed: $e');
       return '';

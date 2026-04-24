@@ -1,16 +1,14 @@
 // lib/services/gemini_service.dart
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../services/creditService.dart';
 
 class GeminiService {
   // Hosted Backend Configuration
   String get _baseUrl {
-    if (kIsWeb) return 'http://localhost:3000';
-    if (Platform.isAndroid) return 'http://10.0.2.2:3000';
-    return 'http://localhost:3000';
+    return 'https://apps-model-server.mirdemy.com';
   }
 
   /// Estimated token count from the last API call (prompt + response) / 4
@@ -129,6 +127,38 @@ Use a clean and professional layout using ONLY the headers below:
 - Strictly avoid all '*' (asterisks) for bullets.
 - Separate each section clearly.
 
+user: $query
+""";
+    return await _ask(prompt);
+  }
+
+  /// Chat with strict document context (AI Tutor Mode)
+  Future<String> tutorChatWithContext(String query, List<Map<String, String>> chatHistory, String documentContext) async {
+    // Truncate document context if it's too massive, to prevent payload errors.
+    final String truncatedDocContext = documentContext.length > 25000 
+        ? "${documentContext.substring(0, 25000)}... [Truncated for brevity]"
+        : documentContext;
+
+    final conversation = chatHistory.map((m) {
+      final role = (m["role"] == "user") ? "user" : "model";
+      return "$role: ${m["text"]}";
+    }).join("\n");
+
+    final prompt = """
+You are an expert AI Tutor. Your prime directive is to analyze the user's specific study material and answer their questions STRICTLY based on that content.
+
+--- START OF USER'S STUDY MATERIAL (CONTEXT) ---
+$truncatedDocContext
+--- END OF USER'S STUDY MATERIAL (CONTEXT) ---
+
+Rules for your response:
+1. Try your absolute best to answer the user's question using the provided context.
+2. If the user's question is NOT covered by the study material, politely inform them: "This specific question is not covered in your uploaded material, but here is a brief general explanation:" and provide a short, helpful generic answer.
+3. Be friendly, encouraging, and break down complex concepts to make them easy to learn.
+4. Maintain a clean, professional layout.
+5. STRICTLY avoid using asterisks (*) for bullet points or lists; use a dash (-) or a bullet symbol (•). You may use '**' for bolding.
+
+Conversation History:
 $conversation
 user: $query
 """;
@@ -473,6 +503,123 @@ STRICT JSON OUTPUT ONLY:
         "recommendations": ["Review your incorrect answers for deeper understanding."]
       };
     }
+  }
+
+  /// 👶 ELI5: Explain Like I'm 5 (Structured Upgrade)
+  Future<Map<String, dynamic>> getELI5Explanation(String topic, String level) async {
+    final prompt = """
+Topic: "$topic"
+Target Audience Level: $level
+
+You are an expert educator. Explain the topic above in an "Explain Like I'm 5" style, but tailored to the requested technical level ($level).
+
+STRUCTURE YOUR RESPONSE AS A VALID JSON OBJECT WITH THESE KEYS:
+- "definition": A 1-sentence crystal clear definition.
+- "explanation": A detailed but simple multi-paragraph explanation using analogies.
+- "example": A relatable real-life example or scenario.
+- "useCase": A practical use case of this concept in the real world.
+- "imageRequired": (bool) true if an image would significantly help visualize this topic (e.g. for "Photosynthesis" or "Black Hole"), false if purely conceptual (e.g. "Patience").
+- "imageSearchQuery": (string) If imageRequired is true, provide a 3-word descriptive search query for a high-quality educational image. Otherwise, leave empty.
+
+IMPORTANT:
+1. Return ONLY the JSON object. No other text.
+2. Ensure the JSON is valid and escaped properly.
+3. Use simple, engaging, and professional language.
+4. For level Beginner: Use extremely simple analogies.
+5. For level Intermediate/Advanced: Use correct terminology but explain it intuitively.
+""";
+    
+    // We use the production Gemini endpoint which handles the model selection internally.
+    final response = await _ask(prompt);
+    
+    try {
+      // Robust JSON extraction
+      String cleanedResponse = response.trim();
+      final jsonRegex = RegExp(r'\{(?:[^{}]|(\{(?:[^{}]|(\{[^{}]*\}))*\}))*\}');
+      final match = jsonRegex.firstMatch(cleanedResponse);
+      
+      if (match != null) {
+        cleanedResponse = match.group(0)!;
+      }
+      
+      return jsonDecode(cleanedResponse);
+    } catch (e) {
+      // Fallback in case of parsing error
+      return {
+        "definition": "Could not parse detailed response.",
+        "explanation": response,
+        "example": "N/A",
+        "useCase": "N/A",
+        "imageRequired": false,
+        "imageSearchQuery": ""
+      };
+    }
+  }
+
+  /// 🎨 Generate Image via Gemini Developer API (Imagen 3)
+  Future<String?> generateImage(String prompt) async {
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      debugPrint('No GEMINI_API_KEY found in .env');
+      return null;
+    }
+
+    final url = Uri.parse(
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=$apiKey');
+
+    debugPrint('🖼️ Generating image for: $prompt');
+    debugPrint('🔗 URL: $url');
+
+    try {
+      final requestBody = jsonEncode({
+        "contents": [
+          {
+            "role": "user",
+            "parts": [
+              {"text": "Generate a high-quality educational illustration for: $prompt. Output the image as base64 inline data."}
+            ]
+          }
+        ]
+      });
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: requestBody,
+      );
+
+      debugPrint('📡 Status Code: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        debugPrint('✅ Response Received');
+        
+        final candidates = data['candidates'] as List?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final parts = candidates[0]['content']['parts'] as List?;
+          if (parts != null && parts.isNotEmpty) {
+            for (var part in parts) {
+              if (part['inlineData'] != null) {
+                debugPrint('📸 Image data found!');
+                return part['inlineData']['data'] as String?;
+              }
+            }
+          }
+        }
+        debugPrint('⚠️ No inlineData found in response parts. Body: ${response.body}');
+      } else {
+        debugPrint('❌ HTTP Error: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('🚨 Exception generating image: $e');
+    }
+    return null;
+  }
+
+  /// 📖 Get Word Meaning
+  Future<String> getWordMeaning(String word) async {
+    final prompt = "Provide a short and clear English meaning for the word: \"$word\". Only return the meaning, nothing else.";
+    return await _ask(prompt);
   }
 }
 

@@ -10,6 +10,7 @@ import 'package:student_ai/services/IAPService.dart';
 import 'package:student_ai/services/adService.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:student_ai/services/geminiService.dart';
 import 'package:student_ai/splashWrapper.dart';
 import 'Providers/authProvider.dart';
@@ -30,6 +31,7 @@ final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

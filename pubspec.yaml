@@ -62,6 +62,9 @@ dependencies:
   graphview: ^1.5.1
   screenshot: ^3.0.0
   path_provider: ^2.1.5
+  cached_network_image: ^3.4.1
+  google_fonts: ^6.2.1
+  flutter_dotenv: ^6.0.1
 
 
 
@@ -99,6 +102,7 @@ flutter:
      - assets/quiz.png
      - assets/success.json
      - assets/1.png
+     - .env
 
   #   - images/a_dot_ham.jpeg
 

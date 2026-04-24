@@ -22,7 +22,7 @@ import 'addnotes/add_notes_screen.dart';
 import 'mindmap/mindmap_screen.dart';
 import 'mindmap/mindmap_screen.dart';
 import 'authwrapper.dart';
-import 'chatBuddyScreen.dart';
+import 'tutor/AITutorScreen.dart';
 import 'homeworkHelper/homeworkScreen.dart';
 import 'notesFeed/notesFeedScreen.dart';
 import '../../Providers/homeStatsProvider.dart';
@@ -35,6 +35,7 @@ import 'purchaseScreen/specialOfferScreen.dart';
 import 'addnotes/NotesCleanerScreen.dart';
 import 'flashcards/FlashcardHubScreen.dart';
 import 'flashcards/FlashcardGeneratorScreen.dart';
+import 'eli5/ELI5Screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -266,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
               child: Text(
-                "Hey buddy, how can I help you?",
+                "Upload your notes, let's chat!",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: isSmallScreen ? 12 : 14,
@@ -281,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               context,
               MaterialPageRoute(
                 builder: (context) {
-                  return ChatBuddyScreen();
+                  return const AITutorScreen();
                 },
               ),
             );
@@ -430,6 +431,8 @@ class HomeBody extends StatelessWidget {
                               screenWidth,
                               screenHeight,
                             ),
+                            const SizedBox(height: 32),
+                            _buildELI5Section(context),
                           ] else ...[
                             _buildGuestQuickActions(context),
                             const SizedBox(height: 32),
@@ -689,8 +692,13 @@ class HomeBody extends StatelessWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              const SizedBox(width: 4),
-
+              _buildGuestActionCard(
+                title: 'ELI5 Mode',
+                icon: Icons.child_care_rounded,
+                subtitle: 'Simplify concepts',
+                colors: const [Color(0xFF6C63FF), Color(0xFF8E24AA)],
+                context: context,
+              ),
               /* _buildGuestActionCard(
                 title: 'Create Study Plans',
                 icon: Icons.auto_awesome_mosaic_rounded,
@@ -1438,6 +1446,134 @@ class HomeBody extends StatelessWidget {
   }
 
   // Keep all your existing methods for logged-in users
+  Widget _buildELI5Section(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Row(
+            children: [
+              Text(
+                'ELI5 Mode',
+                style: TextStyle(
+                  fontSize: screenWidth > 600 ? 24 : 22,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF2D2B4E),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'NEW',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepPurple,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ELI5Screen()),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF6C63FF),
+                  const Color(0xFF8E24AA),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6C63FF).withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Explain Like I’m 5',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Simplifies any concept instantly with multiple difficulty levels.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'Try it now',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.child_care_rounded,
+                    size: 40,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildQuickActions(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
@@ -1464,6 +1600,19 @@ class HomeBody extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             children: [
               const SizedBox(width: 4),
+              _buildActionCard(
+                title: 'ELI5 Mode',
+                icon: Icons.child_care_rounded,
+                subtitle: 'Simplify concepts',
+                colors: const [Color(0xFF6C63FF), Color(0xFF8E24AA)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ELI5Screen()),
+                  );
+                },
+                context: context,
+              ),
               _buildActionCard(
                 title: 'Auto Syllabus',
                 icon: Icons.auto_stories_rounded,

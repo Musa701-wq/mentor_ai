@@ -9,9 +9,11 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 class IAPService extends ChangeNotifier {
   // Product IDs
   static const List<String> creditIds = [
-    "com.vectorlabs.mentorai.50credits",
-    "com.vectorlabs.mentorai100credits",
+    "com.vectorlabs.mentorai.250.credits",
     "com.vectorlabs.mentorai500credits",
+    "com.vectorlabs.mentorai.1000.credits",
+    "com.vectorlabs.mentorai.2500.credits",
+    "com.vectorlabs.mentorai.5000.credits",
   ];
 
   // Subscription ID
@@ -228,9 +230,11 @@ class IAPService extends ChangeNotifier {
   /// Get credits amount for a product ID
   static int getCreditsForProduct(String productId) {
     return switch (productId) {
-      "com.vectorlabs.mentorai.50credits" => 50,
-      "com.vectorlabs.mentorai100credits" => 100,
-      "com.vectorlabs.mentorai500credits" => 500,
+      "com.vectorlabs.mentorai.250.credits" => 250,
+      "com.vectorlabs.mentorai500credits"   => 500,
+      "com.vectorlabs.mentorai.1000.credits" => 1000,
+      "com.vectorlabs.mentorai.2500.credits" => 2500,
+      "com.vectorlabs.mentorai.5000.credits" => 5000,
       _ => 0,
     };
   }

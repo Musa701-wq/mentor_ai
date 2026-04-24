@@ -16,6 +16,7 @@ import 'DetailedAnalyticsScreen.dart';
 import '../purchaseScreen/creditPurchaseScreen.dart';
 import 'editProfileScreen.dart';
 import '../authwrapper.dart';
+import 'OtherProductsScreen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String uid;
@@ -1736,6 +1737,21 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ),
           const SizedBox(height: 16),
+
+          // Other Products
+          _buildLegalItem(
+            icon: Icons.apps_rounded,
+            title: 'Other Products',
+            subtitle: 'Discover more educational apps',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const OtherProductsScreen()),
+              );
+            },
+            isDark: isDark,
+          ),
+          const SizedBox(height: 12),
 
           // Privacy Policy
           _buildLegalItem(

@@ -20,12 +20,11 @@ import 'addQuiz/addQuiz.dart';
 import 'addQuiz/quizListScreen.dart';
 import 'addnotes/add_notes_screen.dart';
 import 'mindmap/mindmap_screen.dart';
-import 'mindmap/mindmap_screen.dart';
 import 'authwrapper.dart';
 import 'tutor/AITutorScreen.dart';
 import 'homeworkHelper/homeworkScreen.dart';
 import 'notesFeed/notesFeedScreen.dart';
-import '../../Providers/homeStatsProvider.dart';
+import '../Providers/homeStatsProvider.dart';
 import 'notesFeed/showNotesDetail.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,6 +35,7 @@ import 'addnotes/NotesCleanerScreen.dart';
 import 'flashcards/FlashcardHubScreen.dart';
 import 'flashcards/FlashcardGeneratorScreen.dart';
 import 'eli5/ELI5Screen.dart';
+import 'infographic/InfographicHubScreen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -692,11 +692,30 @@ class HomeBody extends StatelessWidget {
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _buildGuestActionCard(
+              _buildActionCard(
                 title: 'ELI5 Mode',
                 icon: Icons.child_care_rounded,
                 subtitle: 'Simplify concepts',
                 colors: const [Color(0xFF6C63FF), Color(0xFF8E24AA)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ELI5Screen()),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'Infographic AI',
+                icon: Icons.auto_awesome_mosaic_rounded,
+                subtitle: 'Visual summaries',
+                colors: const [Color(0xFFFFB300), Color(0xFFFF6F00)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const InfographicHubScreen()),
+                  );
+                },
                 context: context,
               ),
               /* _buildGuestActionCard(
@@ -1485,92 +1504,101 @@ class HomeBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
-        GestureDetector(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ELI5Screen()),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF6C63FF),
-                  const Color(0xFF8E24AA),
-                ],
+        Row(
+          children: [
+            Expanded(
+              child: _buildEli5MiniCard(
+                title: 'ELI5 Mentor',
+                subtitle: 'Simplify logic',
+                icon: Icons.child_care_rounded,
+                colors: [const Color(0xFF6C63FF), const Color(0xFF8E24AA)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ELI5Screen()),
+                  );
+                },
               ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6C63FF).withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Explain Like I’m 5',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Simplifies any concept instantly with multiple difficulty levels.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'Try it now',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.child_care_rounded,
-                    size: 40,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildEli5MiniCard(
+                title: 'Infographic AI',
+                subtitle: 'Visual study',
+                icon: Icons.auto_awesome_mosaic_rounded,
+                colors: [const Color(0xFFFFB300), const Color(0xFFFF6F00)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const InfographicHubScreen()),
+                  );
+                },
+              ),
             ),
-          ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildEli5MiniCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required List<Color> colors,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 140, // Fixed height to prevent layout crashes in scroll views
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: colors,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: colors.first.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: Colors.white, size: 24),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1609,6 +1637,19 @@ class HomeBody extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const ELI5Screen()),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'Infographic AI',
+                icon: Icons.auto_awesome_mosaic_rounded,
+                subtitle: 'Visual summaries',
+                colors: const [Color(0xFFFFB300), Color(0xFFFF6F00)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const InfographicHubScreen()),
                   );
                 },
                 context: context,

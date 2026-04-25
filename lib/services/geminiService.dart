@@ -621,5 +621,35 @@ IMPORTANT:
     final prompt = "Provide a short and clear English meaning for the word: \"$word\". Only return the meaning, nothing else.";
     return await _ask(prompt);
   }
+
+  /// 🧠 Explain Excerpt
+  Future<String> getExcerptExplanation(String text) async {
+    final prompt = """
+Explain the following text snippet from a learning context in a simple and clear way. 
+Focus on explaining any complex terms or concepts mentioned in this specific excerpt.
+
+Excerpt:
+"$text"
+
+Guidelines:
+1. Be concise but informative.
+2. Use an encouraging, teacher-like tone.
+3. If it's a single word, provide its definition and usage.
+4. If it's a phrase, explain what it means in simple terms.
+""";
+    return await _ask(prompt);
+  }
+
+  /// 📝 Summarize Excerpt
+  Future<String> getExcerptSummary(String text) async {
+    final prompt = """
+Provide a very brief summary of the following text snippet. 
+Keep it under 30 words if possible.
+
+Snippet:
+"$text"
+""";
+    return await _ask(prompt);
+  }
 }
 

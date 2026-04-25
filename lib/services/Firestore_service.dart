@@ -247,5 +247,112 @@ class FirestoreService {
       };
     }).toList();
   }
+
+  // ------------------- ELI5 (Explain Like I'm 5) -------------------
+  Future<String> saveELI5(String uid, Map<String, dynamic> data) async {
+    final docRef = await _firestore
+        .collection("users")
+        .doc(uid)
+        .collection("eli5_history")
+        .add({
+      ...data,
+      "timestamp": FieldValue.serverTimestamp(),
+    });
+    return docRef.id;
+  }
+
+  Stream<List<Map<String, dynamic>>> getELI5HistoryStream(String uid) {
+    return _firestore
+        .collection("users")
+        .doc(uid)
+        .collection("eli5_history")
+        .orderBy("timestamp", descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          ...data,
+          'id': doc.id,
+        };
+      }).toList();
+    });
+  }
+
+  Future<List<Map<String, dynamic>>> fetchELI5History(String uid) async {
+    final snapshot = await _firestore
+        .collection("users")
+        .doc(uid)
+        .collection("eli5_history")
+        .orderBy("timestamp", descending: true)
+        .limit(10)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        if (data != null) ...data,
+        "id": doc.id,
+      };
+    }).toList();
+  }
+
+  Future<void> updateELI5Image(String uid, String docId, String base64Image) async {
+    await _firestore
+        .collection("users")
+        .doc(uid)
+        .collection("eli5_history")
+        .doc(docId)
+        .update({
+      'imageData': base64Image,
+    });
+  }
+
+  // ------------------- INFOGRAPHIC CONVERTER -------------------
+
+  /// Stream of user infographic history
+  Stream<QuerySnapshot> getInfographicHistoryStream(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('infographics')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  /// Initial save of infographic notes (Text-First strategy)
+  Future<String> saveInfographic({
+    required String userId,
+    required String notes,
+    required String prompt,
+  }) async {
+    final docRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('infographics')
+        .doc();
+
+    await docRef.set({
+      'id': docRef.id,
+      'notes': notes,
+      'prompt': prompt,
+      'timestamp': FieldValue.serverTimestamp(),
+      'imageData': null, // Will be updated asynchronously
+    });
+
+    return docRef.id;
+  }
+
+  /// Update infographic record with Base64 image data
+  Future<void> updateInfographicImage(String userId, String docId, String base64Image) async {
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('infographics')
+        .doc(docId)
+        .update({
+      'imageData': base64Image,
+    });
+  }
 }
 

@@ -354,5 +354,35 @@ class FirestoreService {
       'imageData': base64Image,
     });
   }
+
+  // ------------------- TOPIC DEPENDENCY GRAPH -------------------
+
+  Stream<QuerySnapshot> getDependencyGraphHistoryStream(String userId) {
+    return _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('dependency_graphs')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  Future<void> saveDependencyGraph({
+    required String userId,
+    required String topic,
+    required Map<String, dynamic> rawGraphData,
+  }) async {
+    final docRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('dependency_graphs')
+        .doc();
+
+    await docRef.set({
+      'id': docRef.id,
+      'topic': topic,
+      'graphData': rawGraphData,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
 }
 

@@ -97,10 +97,11 @@ class ChatProvider with ChangeNotifier {
       final replyText = await geminiService.chatWithContext(query, context);
 
       // ─── Dynamic credit deduction based on token usage ─────────────────
-      final tokens = geminiService.lastEstimatedTokens;
-      final cost = CreditsService.calcCreditsFromTokens(tokens);
-      await _creditsService.deductCredits(cost);
-      debugPrint('💳 Chat: deducted $cost credits ($tokens tokens)');
+      await _creditsService.deductUsage(
+        tokens: geminiService.lastEstimatedTokens, 
+        actionName: "Study Buddy Chat"
+      );
+      debugPrint('💳 Chat: deducted usage for ${geminiService.lastEstimatedTokens} tokens');
 
       final aiMsg = ChatMessage(
         text: replyText,

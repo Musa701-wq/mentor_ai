@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/geminiService.dart';
+import '../../services/creditService.dart';
 import 'quizSolveScreen.dart';
 
 class QuizAnalysisScreen extends StatefulWidget {
@@ -46,33 +47,52 @@ class _QuizAnalysisScreenState extends State<QuizAnalysisScreen> {
       return;
     }
 
-    try {
-      final analysis = await _geminiService.analyzeQuizPerformance(
-        questions: widget.questions,
-        userAnswers: widget.answers,
-      );
-      if (mounted) {
-        setState(() {
-          _analysis = analysis;
-          _isLoading = false;
-        });
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "Quiz Performance Analysis",
+      onConfirmedAction: () async {
+        try {
+          final analysis = await _geminiService.analyzeQuizPerformance(
+            questions: widget.questions,
+            userAnswers: widget.answers,
+          );
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: _geminiService.lastEstimatedTokens, 
+            actionName: "Quiz Analysis"
+          );
 
-        // 💾 Save analysis to Firestore for persistence
-        if (widget.attemptId != null) {
-          FirebaseFirestore.instance
-              .collection("quizAttempts")
-              .doc(widget.attemptId)
-              .set({"analysis": analysis}, SetOptions(merge: true));
+          if (mounted) {
+            setState(() {
+              _analysis = analysis;
+              _isLoading = false;
+            });
+
+            // 💾 Save analysis to Firestore for persistence
+            if (widget.attemptId != null) {
+              FirebaseFirestore.instance
+                  .collection("quizAttempts")
+                  .doc(widget.attemptId)
+                  .set({"analysis": analysis}, SetOptions(merge: true));
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Analysis failed: $e")),
+            );
+            setState(() => _isLoading = false);
+          }
+        }
+      },
+      onCancel: () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          Navigator.pop(context); // Go back if they won't pay for analysis
         }
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Analysis failed: $e")),
-        );
-        setState(() => _isLoading = false);
-      }
-    }
+    );
   }
 
   @override

@@ -11,6 +11,7 @@ import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:intl/intl.dart';
 import '../../services/geminiService.dart';
 import '../../services/Firestore_service.dart';
+import '../../services/creditService.dart';
 
 enum ELI5State { hub, generator, result, history }
 
@@ -58,78 +59,91 @@ class _ELI5ScreenState extends State<ELI5Screen> with TickerProviderStateMixin {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-      _result = null;
-      _selectedHistoryItem = null;
-      _imageBytes = null;
-    });
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "ELI5 Generation",
+      onConfirmedAction: () async {
+        setState(() {
+          _isLoading = true;
+          _result = null;
+          _selectedHistoryItem = null;
+          _imageBytes = null;
+        });
 
-    try {
-      final result = await _geminiService.getELI5Explanation(topic, _selectedLevel);
-      Map<String, dynamic> finalSaveData = {
-        'topic': topic,
-        'level': _selectedLevel,
-        ...result,
-      };
-
-      setState(() {
-        _result = result;
-        _state = ELI5State.result;
-      });
-
-      // Auto-save TEXT content first (immediately after generation)
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      String? savedDocId;
-      if (uid != null) {
         try {
-          savedDocId = await _firestoreService.saveELI5(uid, {
+          final result = await _geminiService.getELI5Explanation(topic, _selectedLevel);
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: _geminiService.lastEstimatedTokens, 
+            actionName: "ELI5 Generation"
+          );
+
+          Map<String, dynamic> finalSaveData = {
             'topic': topic,
             'level': _selectedLevel,
             ...result,
-          });
-        } catch (e) {
-          debugPrint('Error saving initial history: $e');
-        }
-      }
+          };
 
-      // Generate image if required
-      if (result['imageRequired'] == true && result['imageSearchQuery'] != null) {
-        debugPrint('🎨 Attempting to generate image for: ${result['imageSearchQuery']}');
-        final base64String = await _geminiService.generateImage(result['imageSearchQuery']);
-        if (base64String != null) {
           setState(() {
-            _imageBytes = base64Decode(base64String);
+            _result = result;
+            _state = ELI5State.result;
           });
-          
-          // 🚀 [LOCAL SAVE] Save to device immediately for maximum reliability
-          if (savedDocId != null) {
-            await _saveImageLocally(savedDocId, _imageBytes!);
-          }
-          
-          // Update Firestore record with image data if record was created
-          if (uid != null && savedDocId != null) {
+
+          // Auto-save TEXT content first (immediately after generation)
+          final uid = FirebaseAuth.instance.currentUser?.uid;
+          String? savedDocId;
+          if (uid != null) {
             try {
-              await _firestoreService.updateELI5Image(uid, savedDocId, base64String);
+              savedDocId = await _firestoreService.saveELI5(uid, {
+                'topic': topic,
+                'level': _selectedLevel,
+                ...result,
+              });
             } catch (e) {
-              debugPrint('⚠️ Error updating image in Firestore (likely too large): $e');
-              // No snackbar here to avoid annoying user, since local save already worked
+              debugPrint('Error saving initial history: $e');
             }
           }
-        } else {
-          debugPrint('⚠️ Image generation failed or returned null.');
-          setState(() {
-            _result!['imageRequired'] = false;
-          });
+
+          // Generate image if required
+          if (result['imageRequired'] == true && result['imageSearchQuery'] != null) {
+            debugPrint('🎨 Attempting to generate image for: ${result['imageSearchQuery']}');
+            final base64String = await _geminiService.generateImage(result['imageSearchQuery']);
+            if (base64String != null) {
+              setState(() {
+                _imageBytes = base64Decode(base64String);
+              });
+              
+              // 🚀 [LOCAL SAVE] Save to device immediately for maximum reliability
+              if (savedDocId != null) {
+                await _saveImageLocally(savedDocId, _imageBytes!);
+              }
+              
+              // Update Firestore record with image data if record was created
+              if (uid != null && savedDocId != null) {
+                try {
+                  await _firestoreService.updateELI5Image(uid, savedDocId, base64String);
+                } catch (e) {
+                  debugPrint('⚠️ Error updating image in Firestore (likely too large): $e');
+                  // No snackbar here to avoid annoying user, since local save already worked
+                }
+              }
+            } else {
+              debugPrint('⚠️ Image generation failed or returned null.');
+              setState(() {
+                _result!['imageRequired'] = false;
+              });
+            }
+          }
+        } catch (e) {
+          _showSnackBar('Oops! Something went wrong: $e', Colors.red);
+        } finally {
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
         }
-      }
-    } catch (e) {
-      _showSnackBar('Oops! Something went wrong: $e', Colors.red);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+      },
+    );
   }
 
   Future<void> _showSmartActionDialog(String text, String action) async {
@@ -140,210 +154,227 @@ class _ELI5ScreenState extends State<ELI5Screen> with TickerProviderStateMixin {
       return;
     }
 
-    String title;
-    IconData icon;
-    Color iconColor;
-    Future<String> aiFuture;
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "Smart Action",
+      minBalance: 0.1, // Small check for small action
+      onConfirmedAction: () async {
+        String title;
+        IconData icon;
+        Color iconColor;
+        Future<String> aiFuture;
 
-    switch (action) {
-      case 'Summarize':
-        title = 'Summary';
-        icon = Icons.summarize_rounded;
-        iconColor = Colors.teal;
-        aiFuture = _geminiService.getExcerptSummary(cleanedText);
-        break;
-      case 'Describe':
-        title = 'Quick Explanation';
-        icon = Icons.psychology_alt_rounded;
-        iconColor = Colors.orange;
-        aiFuture = _geminiService.getExcerptExplanation(cleanedText);
-        break;
-      case 'Meaning':
-      default:
-        title = 'Meaning of "${cleanedText.split(' ').first}${cleanedText.split(' ').length > 1 ? '...' : ''}"';
-        icon = Icons.translate_rounded;
-        iconColor = Colors.indigo;
-        aiFuture = _geminiService.getWordMeaning(cleanedText);
-        break;
-    }
+        switch (action) {
+          case 'Summarize':
+            title = 'Summary';
+            icon = Icons.summarize_rounded;
+            iconColor = Colors.teal;
+            aiFuture = _geminiService.getExcerptSummary(cleanedText);
+            break;
+          case 'Describe':
+            title = 'Quick Explanation';
+            icon = Icons.psychology_alt_rounded;
+            iconColor = Colors.orange;
+            aiFuture = _geminiService.getExcerptExplanation(cleanedText);
+            break;
+          case 'Meaning':
+          default:
+            title = 'Meaning of "${cleanedText.split(' ').first}${cleanedText.split(' ').length > 1 ? '...' : ''}"';
+            icon = Icons.translate_rounded;
+            iconColor = Colors.indigo;
+            aiFuture = _geminiService.getWordMeaning(cleanedText);
+            break;
+        }
 
-    debugPrint('💬 Showing dialog for: $title');
-    if (!mounted) {
-      debugPrint('❌ Widget not mounted, cannot show dialog.');
-      return;
-    }
+        // Usage deduction after future completes (or inside the FutureBuilder)
+        // Since it's a FutureBuilder, we should wrap the aiFuture to deduct after it finishes
+        final wrappedFuture = aiFuture.then((res) async {
+          await CreditsService().deductUsage(
+            tokens: _geminiService.lastEstimatedTokens, 
+            actionName: "Smart Action ($action)"
+          );
+          return res;
+        });
 
-    // Use addPostFrameCallback to ensure the context menu is fully dismissed first
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      showDialog(
-        context: this.context,
-        barrierDismissible: true,
-        builder: (context) {
-          debugPrint('🎨 Building Professional Dialog');
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 40,
-                    offset: const Offset(0, 20),
+        debugPrint('💬 Showing dialog for: $title');
+        if (!mounted) {
+          debugPrint('❌ Widget not mounted, cannot show dialog.');
+          return;
+        }
+
+        // Use addPostFrameCallback to ensure the context menu is fully dismissed first
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          showDialog(
+            context: this.context,
+            barrierDismissible: true,
+            builder: (context) {
+              debugPrint('🎨 Building Professional Dialog');
+              return Dialog(
+                backgroundColor: Colors.transparent,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 40,
+                        offset: const Offset(0, 20),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // PROFESSIONAL HEADER
-                  Container(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-                    decoration: BoxDecoration(
-                      color: iconColor.withOpacity(0.03),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                action.toUpperCase(),
-                                style: GoogleFonts.poppins(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: iconColor,
-                                  letterSpacing: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                title,
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF2D2B4E),
-                                ),
-                              ),
-                            ],
-                          ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // PROFESSIONAL HEADER
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                        decoration: BoxDecoration(
+                          color: iconColor.withOpacity(0.03),
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                         ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Icon(Icons.close_rounded, color: Colors.grey[400]),
-                          style: IconButton.styleFrom(backgroundColor: Colors.grey[100]),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // CONTENT AREA
-                  Flexible(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-                      child: FutureBuilder<String>(
-                        future: aiFuture,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 40),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: 40,
-                                      height: 40,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                        valueColor: AlwaysStoppedAnimation<Color>(iconColor),
-                                      ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    action.toUpperCase(),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: iconColor,
+                                      letterSpacing: 1.5,
                                     ),
-                                    const SizedBox(height: 24),
-                                    Text(
-                                      'Curating Explanation...',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.grey[600],
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    title,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w700,
+                                      color: const Color(0xFF2D2B4E),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-                          if (snapshot.hasError) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 30),
-                                child: Text(
-                                  'Service temporarily unavailable. Please try again.',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(color: Colors.red[400], fontSize: 14),
-                                ),
-                              ),
-                            );
-                          }
-                          return SingleChildScrollView(
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: Text(
-                              snapshot.data ?? 'No information found for this selection.',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                height: 1.7,
-                                color: const Color(0xFF4A4972),
-                                fontWeight: FontWeight.w500,
+                                  ),
+                                ],
                               ),
                             ),
-                          );
-                        },
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: Icon(Icons.close_rounded, color: Colors.grey[400]),
+                              style: IconButton.styleFrom(backgroundColor: Colors.grey[100]),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ),
 
-                  // FOOTER ACTIONS
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2D2B4E),
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'Acknowledged',
-                          style: GoogleFonts.poppins(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 16,
-                            letterSpacing: 0.5,
+                      // CONTENT AREA
+                      Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                          child: FutureBuilder<String>(
+                            future: wrappedFuture,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState == ConnectionState.waiting) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 40),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        SizedBox(
+                                          width: 40,
+                                          height: 40,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 3,
+                                            valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 24),
+                                        Text(
+                                          'Curating Explanation...',
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.grey[600],
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+                              if (snapshot.hasError) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 30),
+                                    child: Text(
+                                      'Service temporarily unavailable. Please try again.',
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.poppins(color: Colors.red[400], fontSize: 14),
+                                    ),
+                                  ),
+                                );
+                              }
+                              return SingleChildScrollView(
+                                physics: const BouncingScrollPhysics(),
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Text(
+                                  snapshot.data ?? 'No information found for this selection.',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    height: 1.7,
+                                    color: const Color(0xFF4A4972),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ),
                       ),
-                    ),
+
+                      // FOOTER ACTIONS
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2D2B4E),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'Acknowledged',
+                              style: GoogleFonts.poppins(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
-        },
-      );
-    });
+        });
+      },
+    );
   }
 
   Future<void> _showWordMeaningDialog(String word) async {

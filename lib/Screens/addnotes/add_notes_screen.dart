@@ -105,24 +105,31 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
       // Deduct credits and proceed with OCR
       final int totalCost =  (_generateSummary ? CreditsConfig.aiSummary : 0);
 
-      await CreditsService.confirmAndDeductCredits(
+      await CreditsService.confirmUsageAndCheckBalance(
         context: context,
-        cost: totalCost,
-        actionName: "Summary generation will deduct ${CreditsConfig.aiSummary} credits",
+        actionName: "OCR & Summary Generation",
         onConfirmedAction: () async {
           await provider.runOcrOnFiles();
 
           if (_generateSummary && provider.content.isNotEmpty) {
             await provider.generateAiSummary();
-          }
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Text extracted${_generateSummary ? ' and summary generated' : ''}! -$totalCost credits"),
-                backgroundColor: Colors.green,
-              ),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Text extracted and summary generated!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Text extracted!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
           }
 
           // Reset summary option for next time
@@ -147,9 +154,8 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
 
     if (_generateSummary) {
       // If summary generation is enabled, ask for confirmation and deduct credits
-      await CreditsService.confirmAndDeductCredits(
+      await CreditsService.confirmUsageAndCheckBalance(
         context: context,
-        cost: CreditsConfig.aiSummary,
         actionName: "AI Summary Generation",
         onConfirmedAction: () async {
           await provider.generateAiSummary();
@@ -157,8 +163,8 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Summary generated! -${CreditsConfig.aiSummary} credits"),
+              const SnackBar(
+                content: Text("Summary generated!"),
                 backgroundColor: Colors.green,
               ),
             );
@@ -177,16 +183,15 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
   }
 
   Future<void> _askForSummary() async {
-    await CreditsService.confirmAndDeductCredits(
+    await CreditsService.confirmUsageAndCheckBalance(
       context: context,
-      cost: CreditsConfig.aiSummary,
       actionName: "AI Summary Generation",
       onConfirmedAction: () async {
         await provider.generateAiSummary();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Summary generated! -${CreditsConfig.aiSummary} credits"),
+            const SnackBar(
+              content: Text("Summary generated!"),
               backgroundColor: Colors.green,
             ),
           );
@@ -782,9 +787,8 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
                                         
                                         // If summary generation is requested, handle it with credit deduction
                                         if (result['generateSummary'] == true) {
-                                          await CreditsService.confirmAndDeductCredits(
+                                          await CreditsService.confirmUsageAndCheckBalance(
                                             context: context,
-                                            cost: CreditsConfig.aiSummary,
                                             actionName: "AI Summary Generation",
                                             onConfirmedAction: () async {
                                               await provider.generateAiSummary();
@@ -792,8 +796,8 @@ class _AddNotesScreenState extends State<AddNotesScreen> {
 
                                               if (mounted) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text("Summary generated! -${CreditsConfig.aiSummary} credits"),
+                                                  const SnackBar(
+                                                    content: Text("Summary generated!"),
                                                     backgroundColor: Colors.green,
                                                   ),
                                                 );

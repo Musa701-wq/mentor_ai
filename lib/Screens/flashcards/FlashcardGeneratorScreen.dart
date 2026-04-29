@@ -7,6 +7,7 @@ import 'package:lottie/lottie.dart';
 import '../../Providers/flashcardProvider.dart';
 import '../../services/geminiService.dart';
 import '../../services/ocrService.dart';
+import '../../services/creditService.dart';
 
 class FlashcardGeneratorScreen extends StatefulWidget {
   const FlashcardGeneratorScreen({super.key});
@@ -85,36 +86,48 @@ class _FlashcardGeneratorScreenState extends State<FlashcardGeneratorScreen> {
       return;
     }
 
-    setState(() {
-      _isProcessing = true;
-      _statusMsg = 'AI is crafting your flashcards...';
-    });
-
-    try {
-      final cards = await _geminiService.generateFlashcards(
-        _contentController.text,
-        _difficulty,
-      );
-      
-      if (mounted) {
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "Flashcard Generation",
+      onConfirmedAction: () async {
         setState(() {
-          _generatedCards = cards;
-          _isProcessing = false;
-          _showSuccessAnimation = true;
+          _isProcessing = true;
+          _statusMsg = 'AI is crafting your flashcards...';
         });
 
-        await Future.delayed(const Duration(seconds: 2));
+        try {
+          final cards = await _geminiService.generateFlashcards(
+            _contentController.text,
+            _difficulty,
+          );
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: _geminiService.lastEstimatedTokens, 
+            actionName: "Flashcard Generation"
+          );
 
-        if (mounted) {
-          setState(() {
-            _showSuccessAnimation = false;
-          });
+          if (mounted) {
+            setState(() {
+              _generatedCards = cards;
+              _isProcessing = false;
+              _showSuccessAnimation = true;
+            });
+
+            await Future.delayed(const Duration(seconds: 2));
+
+            if (mounted) {
+              setState(() {
+                _showSuccessAnimation = false;
+              });
+            }
+          }
+        } catch (e) {
+          _showSnackBar('Generation failed: $e');
+          setState(() => _isProcessing = false);
         }
-      }
-    } catch (e) {
-      _showSnackBar('Generation failed: $e');
-      setState(() => _isProcessing = false);
-    }
+      },
+    );
   }
 
   Future<void> _saveDeck() async {

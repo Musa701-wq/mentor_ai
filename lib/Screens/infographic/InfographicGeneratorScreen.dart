@@ -13,6 +13,7 @@ import '../../services/geminiService.dart';
 import '../../services/ocrService.dart';
 import '../../services/Firestore_service.dart';
 import '../../widgets/FullScreenImageViewer.dart';
+import '../../services/creditService.dart';
 
 enum GeneratorState { input, processing, result }
 
@@ -114,14 +115,18 @@ class _InfographicGeneratorScreenState extends State<InfographicGeneratorScreen>
       return;
     }
 
-    setState(() {
-      _state = GeneratorState.processing;
-      _statusMsg = 'Drafting visual structure...';
-    });
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "Infographic Generation",
+      onConfirmedAction: () async {
+        setState(() {
+          _state = GeneratorState.processing;
+          _statusMsg = 'Drafting visual structure...';
+        });
 
-    try {
-      // Stage 1: Text to Visual Prompt
-      final analysisPrompt = """
+        try {
+          // Stage 1: Text to Visual Prompt
+          final analysisPrompt = """
 Analyze these study notes and create a detailed VISUAL PROMPT for an image generation model.
 Your goal is to describe a high-quality, professional educational infographic.
 
@@ -139,42 +144,60 @@ INSTRUCTIONS:
 4. DO NOT include person names or specific UI text, just the visual description.
 5. Provide a description of around 50-80 words.
 """;
-      
-      final visualPrompt = await _geminiService.summarize(analysisPrompt);
-      
-      // Save Record (Text-First)
-      _docId = await _firestoreService.saveInfographic(
-        userId: FirebaseAuth.instance.currentUser!.uid,
-        notes: notes,
-        prompt: visualPrompt,
-      );
+          
+          final visualPrompt = await _geminiService.summarize(analysisPrompt);
+          
+          // Usage deduction for text analysis
+          await CreditsService().deductUsage(
+            tokens: _geminiService.lastEstimatedTokens, 
+            actionName: "Infographic Text Analysis"
+          );
 
-      setState(() => _statusMsg = 'Rendering infographic...');
+          // Save Record (Text-First)
+          _docId = await _firestoreService.saveInfographic(
+            userId: FirebaseAuth.instance.currentUser!.uid,
+            notes: notes,
+            prompt: visualPrompt,
+          );
 
-      // Stage 2: Prompt to Image
-      final base64Image = await _geminiService.generateImage("Infographic layout for: $visualPrompt");
-      
-      if (base64Image != null) {
-        final bytes = base64.decode(base64Image);
-        setState(() {
-          _generatedImage = bytes;
-          _state = GeneratorState.result;
-        });
+          setState(() => _statusMsg = 'Rendering infographic...');
 
-        // Async Background Tasks
-        _saveImageLocally(_docId!, bytes);
-        _firestoreService.updateInfographicImage(
-          FirebaseAuth.instance.currentUser!.uid, 
-          _docId!, 
-          base64Image
-        );
-      } else {
-        throw Exception('Image generation returned empty.');
-      }
-    } catch (e) {
-      _showSnackBar('Generation failed: $e', Colors.red);
-      setState(() => _state = GeneratorState.input);
-    }
+          // Stage 2: Prompt to Image
+          final base64Image = await _geminiService.generateImage("Infographic layout for: $visualPrompt");
+          
+          if (base64Image != null) {
+            // Static cost for image generation (handled by geminiService estimation or hardcoded)
+            // For now, generateImage also sets lastEstimatedTokens (usually 0 for non-text, but we should check)
+            // If image generation has a fixed cost, we should use that. 
+            // In geminiService.dart, generateImage doesn't seem to track tokens specifically for image but it does use API.
+            // Let's assume CreditsService handles image cost if tokens is 0 or provided.
+            await CreditsService().deductUsage(
+              tokens: 1000, // Fixed cost for image generation (1 credit)
+              actionName: "Infographic Image Generation"
+            );
+
+            final bytes = base64.decode(base64Image);
+            setState(() {
+              _generatedImage = bytes;
+              _state = GeneratorState.result;
+            });
+
+            // Async Background Tasks
+            _saveImageLocally(_docId!, bytes);
+            _firestoreService.updateInfographicImage(
+              FirebaseAuth.instance.currentUser!.uid, 
+              _docId!, 
+              base64Image
+            );
+          } else {
+            throw Exception('Image generation returned empty.');
+          }
+        } catch (e) {
+          _showSnackBar('Generation failed: $e', Colors.red);
+          setState(() => _state = GeneratorState.input);
+        }
+      },
+    );
   }
 
   Future<void> _saveImageLocally(String id, Uint8List bytes) async {

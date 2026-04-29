@@ -61,6 +61,9 @@ class GeminiService {
     return CreditsService.calcCreditsFromTokens(tokens);
   }
 
+  /// Get the credit cost of the last API call
+  num get lastCallCreditCost => _calcCredits(_lastEstimatedTokens);
+
   /// Removes unwanted formatting like asterisks and extra spaces
   String _cleanResponse(String text) {
     return text
@@ -251,6 +254,39 @@ Return the study plan **strictly in valid JSON only**, with no explanations, com
 """;
 
     return await _ask(prompt);
+  }
+
+  /// Generate Topic Dependency Graph from a topic
+  Future<Map<String, dynamic>> generateDependencyGraph(String topic) async {
+    final prompt = """
+You are a Curriculum Architect AI. Generates a Topic Dependency Graph focusing on the learning order (prerequisites) for the topic: "$topic".
+Break it down into subtopics and sequential concepts.
+Create edges strictly in a "Learn A before B" format (directed from prerequisite to the next topic).
+
+Return the output STRICTLY as a JSON object, no explanations, no markdown. The JSON must have this exact structure:
+{
+  "nodes": [
+    {"id": "1", "label": "Basic Concept"},
+    {"id": "2", "label": "Advanced Concept"}
+  ],
+  "edges": [
+    {"from": "1", "to": "2"}
+  ]
+}
+Make sure 'id' is a string. Ensure the graph represents a chronological learning path.
+""";
+
+    String result = await _ask(prompt);
+    
+    // Clean JSON formatting if model returns markdown
+    result = result.replaceAll("```json", "").replaceAll("```", "").trim();
+
+    try {
+      return Map<String, dynamic>.from(json.decode(result));
+    } catch (e) {
+      debugPrint("❌ JSON parse error in Topic Dependency Graph generation: $e\\nRaw text: $result");
+      return {"nodes": [], "edges": []};
+    }
   }
 
   /// Generate Mindmap data from text

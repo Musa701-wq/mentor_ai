@@ -425,9 +425,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                   const SizedBox(height: 28),
                   _buildProfileInfoCard(user, isDark, context),
                   const SizedBox(height: 30),
-                  _buildActionButtons(context, isDark),
-                  const SizedBox(height: 30),
                   _buildLegalSection(context, isDark),
+                  _buildLogoutButton(context, isDark),
                 ],
               ),
             ),
@@ -1620,92 +1619,54 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, bool isDark) {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const EditProfileScreen(),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 5,
-              shadowColor: Colors.deepPurple.withOpacity(0.4),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.edit_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Edit Profile',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+  Widget _buildLogoutButton(BuildContext context, bool isDark) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 24),
+      child: ElevatedButton(
+        onPressed: () async {
+          final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
+          profileProvider.setUser(UserModel(
+            uid: '',
+            email: '',
+            name: '',
+            grade: '',
+            goal: '',
+            subjects: [],
+            profilePic: '',
+          ));
+          await FirebaseAuth.instance.signOut();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => AuthWrapper()),
+                (route) => false,
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+          foregroundColor: Colors.redAccent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: Colors.redAccent.withOpacity(0.5), width: 1.5),
           ),
+          elevation: 0,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () async {
-              final profileProvider = Provider.of<ProfileProvider>(context, listen: false);
-              profileProvider.setUser(UserModel(
-                uid: '',
-                email: '',
-                name: '',
-                grade: '',
-                goal: '',
-                subjects: [],
-                profilePic: '',
-              ));
-              await FirebaseAuth.instance.signOut();
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => AuthWrapper()),
-                    (route) => false,
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.logout_rounded, color: Colors.redAccent, size: 20),
+            SizedBox(width: 8),
+            Text(
+              'Logout',
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
               ),
-              elevation: 5,
-              shadowColor: Colors.redAccent.withOpacity(0.4),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.logout_rounded, color: Colors.white, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  'Logout',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

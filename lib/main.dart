@@ -23,6 +23,7 @@ import 'Providers/studyPlannerProvider.dart';
 import 'Providers/mindmapProvider.dart';
 import 'Providers/SyllabusProvider.dart';
 import 'Providers/flashcardProvider.dart';
+import 'Providers/dependencyGraphProvider.dart';
 import 'Screens/authwrapper.dart';
 import 'firebase_options.dart'; // Make sure you have this generated
 import 'routes.dart';
@@ -94,6 +95,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SyllabusProvider()),
         ChangeNotifierProvider(create: (_) => IAPService()..init()),
         ChangeNotifierProvider(create: (_) => FlashcardProvider()..loadDecks()),
+        ChangeNotifierProvider(create: (_) => DependencyGraphProvider(geminiService: GeminiService())),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

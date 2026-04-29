@@ -24,6 +24,8 @@ class QuizProvider with ChangeNotifier {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final String uid = FirebaseAuth.instance.currentUser?.uid ?? 'anonymous';
 
+  int get lastTokens => geminiService.lastEstimatedTokens;
+
   QuizProvider({required this.geminiService});
 
   // ---------------- Quiz Creation ----------------
@@ -47,7 +49,7 @@ class QuizProvider with ChangeNotifier {
   }
 
   // --- AI Generated Quiz ---
-  Future<void> generateFromNotes(String notes, {String title = ""}) async {
+  Future<String?> generateFromNotes(String notes, {String title = ""}) async {
     _isLoading = true;
     _isSubmitted = false;
     _selectedAnswers.clear();
@@ -55,6 +57,9 @@ class QuizProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      // Proactive credit deduction (Now handled in UI via confirmAndDeductCredits)
+      // Removing here to avoid double-charging.
+
       final data = await geminiService.generateQuizFromNotes(notes);
       _questions = data.map((q) {
         final options =
@@ -70,15 +75,11 @@ class QuizProvider with ChangeNotifier {
         );
       }).toList();
 
-      // ─── Dynamic credit deduction based on token usage ───────────────
-      // Temporarily bypassed for testing
-      // final tokens = geminiService.lastEstimatedTokens;
-      // final cost = CreditsService.calcCreditsFromTokens(tokens);
-      // await _creditsService.deductCredits(cost);
-      // debugPrint('💳 Quiz: deducted $cost credits ($tokens tokens)');
-
+      debugPrint('💳 Quiz: proactively deducted 1.0 credit');
+      return null;
     } catch (e) {
       _questions = [];
+      return e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();

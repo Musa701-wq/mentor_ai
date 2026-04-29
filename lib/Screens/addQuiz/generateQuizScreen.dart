@@ -79,55 +79,73 @@ class _GenerateQuizScreenState extends State<GenerateQuizScreen> with SingleTick
       return;
     }
 
-    // ✅ Wrap with credit confirmation
-    // ─── Temporarily bypassed for testing ───────────────
-    try {
-      // Set title in provider
-      quizProvider.setQuizTitle(quizTitle);
+    // ✅ Standardized Credit Deduction Flow
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "Quiz Generation",
+      onConfirmedAction: () async {
+        try {
+          // Set title in provider
+          quizProvider.setQuizTitle(quizTitle);
 
-      // Generate quiz with selected note
-      await quizProvider.generateFromNotes(selectedNote!, title: quizTitle);
+          // Generate quiz with selected note
+          final error = await quizProvider.generateFromNotes(selectedNote!, title: quizTitle);
+          if (error != null) {
+            if (error.contains("Insufficient")) return;
+            throw Exception(error);
+          }
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: quizProvider.lastTokens, 
+            actionName: "Quiz Generation"
+          );
 
-      // Save to Firestore
-      await quizProvider.saveQuizToDb(user.uid, isAiGenerated: true);
+          // Save to Firestore
+          await quizProvider.saveQuizToDb(user.uid, isAiGenerated: true);
 
-      if (mounted) {
-        setState(() {
-          _showSuccessAnimation = true;
-        });
+          if (mounted) {
+            setState(() {
+              _showSuccessAnimation = true;
+            });
 
-        await Future.delayed(const Duration(seconds: 2));
+            await Future.delayed(const Duration(seconds: 2));
 
-        setState(() {
-          _showSuccessAnimation = false;
-        });
+            setState(() {
+              _showSuccessAnimation = false;
+            });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Quiz generated & saved! (Bypassed Credits) 🎉",
-            ),
-            backgroundColor: Colors.green[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
-        );
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen(initialIndex: 2)),
-          (route) => false,
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: $e"),
-          backgroundColor: Colors.red[400],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-    }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text("Quiz generated & saved! 🎉"),
+                backgroundColor: Colors.green[600],
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            );
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen(initialIndex: 2)),
+              (route) => false,
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text("Error: $e"),
+                backgroundColor: Colors.red[400],
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            );
+          }
+        }
+      },
+      onCancel: () {
+        // Just return
+      },
+    );
   }
 
 

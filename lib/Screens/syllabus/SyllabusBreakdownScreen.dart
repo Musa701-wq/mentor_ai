@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../Providers/SyllabusProvider.dart';
+import '../../services/creditService.dart';
 import 'SyllabusStudyScreen.dart';
 
 class SyllabusBreakdownScreen extends StatefulWidget {
@@ -45,9 +46,22 @@ class _SyllabusBreakdownScreenState extends State<SyllabusBreakdownScreen> {
     }
   }
 
-  void _process() {
+  Future<void> _process() async {
     if (_selectedFile != null) {
-      context.read<SyllabusProvider>().processSyllabus(_selectedFile!, context);
+      await CreditsService.confirmUsageAndCheckBalance(
+        context: context,
+        actionName: "Roadmap Generation",
+        onConfirmedAction: () async {
+          final provider = context.read<SyllabusProvider>();
+          await provider.processSyllabus(_selectedFile!, context);
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: provider.lastTokens, 
+            actionName: "Roadmap Generation"
+          );
+        },
+      );
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../services/geminiService.dart';
+import '../../services/creditService.dart';
 
 class AITutorScreen extends StatefulWidget {
   const AITutorScreen({super.key});
@@ -296,34 +297,46 @@ class _AITutorScreenState extends State<AITutorScreen> with TickerProviderStateM
       return;
     }
 
-    setState(() {
-      _messages.add({"role": "user", "text": query});
-      _messageController.clear();
-      _isLoading = true;
-    });
-    
-    _scrollToBottom();
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "AI Tutoring",
+      onConfirmedAction: () async {
+        setState(() {
+          _messages.add({"role": "user", "text": query});
+          _messageController.clear();
+          _isLoading = true;
+        });
+        
+        _scrollToBottom();
 
-    try {
-      final response = await _geminiService.tutorChatWithContext(
-        query, 
-        _messages.where((m) => m['role'] != 'system').toList(), 
-        _documentContext
-      );
-      
-      setState(() {
-        _messages.add({"role": "model", "text": response});
-        _isLoading = false;
-      });
-      _scrollToBottom();
-      _saveSessionToHistory();
-      
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      _showSnackBar("Oops! Something went wrong: $e", Colors.red);
-    }
+        try {
+          final response = await _geminiService.tutorChatWithContext(
+            query, 
+            _messages.where((m) => m['role'] != 'system').toList(), 
+            _documentContext
+          );
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: _geminiService.lastEstimatedTokens, 
+            actionName: "AI Tutoring"
+          );
+
+          setState(() {
+            _messages.add({"role": "model", "text": response});
+            _isLoading = false;
+          });
+          _scrollToBottom();
+          _saveSessionToHistory();
+          
+        } catch (e) {
+          setState(() {
+            _isLoading = false;
+          });
+          _showSnackBar("Oops! Something went wrong: $e", Colors.red);
+        }
+      },
+    );
   }
 
   void _showSnackBar(String message, Color color) {
@@ -681,6 +694,8 @@ class _AITutorScreenState extends State<AITutorScreen> with TickerProviderStateM
               ),
             ),
 
+          _buildSuggestedQuestions(),
+
           // Input Bar
           Container(
             padding: const EdgeInsets.all(16).copyWith(top: 8),
@@ -750,6 +765,41 @@ class _AITutorScreenState extends State<AITutorScreen> with TickerProviderStateM
             ),
           )
         ],
+      ),
+    );
+  }
+
+  Widget _buildSuggestedQuestions() {
+    if (_messages.isNotEmpty || _documentContext.isEmpty) return const SizedBox.shrink();
+
+    final suggestions = [
+      "Summarize this document",
+      "Explain the main concepts",
+      "Create a quick quiz",
+      "Give me study tips"
+    ];
+
+    return Container(
+      height: 40,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: suggestions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          return ActionChip(
+            label: Text(suggestions[index], style: const TextStyle(fontSize: 13, color: Color(0xFF6C63FF), fontWeight: FontWeight.w600)),
+            backgroundColor: const Color(0xFF6C63FF).withOpacity(0.1),
+            side: BorderSide.none,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            onPressed: () {
+              _messageController.text = suggestions[index];
+              _sendMessage();
+            },
+          );
+        },
       ),
     );
   }

@@ -13,6 +13,8 @@ class SyllabusProvider with ChangeNotifier {
   final GeminiService _geminiService = GeminiService();
   final FirestoreService _firestoreService = FirestoreService();
 
+  int get lastTokens => _geminiService.lastEstimatedTokens;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -57,13 +59,20 @@ class SyllabusProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Extract Text
+      // 1. Proactive Credit Deduction (Handled in UI via confirmAndDeductCredits)
+      // We keep a safety check here but it should already be done.
+      // Finalizing the security: The UI calls confirmAndDeductCredits.
+      // To avoid double charging, we stop internal deduction if the UI handles it, 
+      // but for robustness we previously had it here. 
+      // I will remove it from here to avoid double charging.
+
+      // 2. Extract Text
       final text = await _ocrService.extractTextFromSyllabus(file);
       if (text.isEmpty) {
         throw Exception('Could not extract text from the file.');
       }
 
-      // 2. Generate Roadmap
+      // 3. Generate Roadmap
       _status = 'AI is building your roadmap... This may take a moment.';
       notifyListeners();
       
@@ -73,11 +82,6 @@ class SyllabusProvider with ChangeNotifier {
       notifyListeners();
       
       _roadmap = result;
-
-      // 3. Deduct Credits (Roadmap generation is 1 credit fixed)
-      // Temporarily bypassed for testing
-      // final creditsService = CreditsService();
-      // await creditsService.deductCredits(1.0); 
 
       // 4. Auto save the result
       _autoSave(text);

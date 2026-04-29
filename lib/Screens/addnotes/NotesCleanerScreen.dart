@@ -11,6 +11,7 @@ import 'package:lottie/lottie.dart';
 import '../../Providers/notesProvider.dart';
 import '../../services/geminiService.dart';
 import '../../services/ocrService.dart';
+import '../../services/creditService.dart';
 import '../../models/notesModel.dart';
 
 class NotesCleanerScreen extends StatefulWidget {
@@ -101,41 +102,53 @@ class _NotesCleanerScreenState extends State<NotesCleanerScreen> {
       return;
     }
 
-    setState(() {
-      _isProcessing = true;
-      _statusMsg = _isHandwritten
-          ? 'AI is decoding your handwriting...'
-          : 'AI is organizing your notes...';
-    });
-
-    try {
-      final String cleaned;
-      if (_isHandwritten) {
-        cleaned =
-        await _geminiService.polishHandwritingOCR(_messyController.text);
-      } else {
-        cleaned = await _geminiService.cleanNotes(_messyController.text);
-      }
-
-      if (mounted) {
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "Notes Cleaning",
+      onConfirmedAction: () async {
         setState(() {
-          _cleanedResult = cleaned;
-          _isProcessing = false;
-          _showSuccessAnimation = true;
+          _isProcessing = true;
+          _statusMsg = _isHandwritten
+              ? 'AI is decoding your handwriting...'
+              : 'AI is organizing your notes...';
         });
 
-        await Future.delayed(const Duration(seconds: 2));
+        try {
+          final String cleaned;
+          if (_isHandwritten) {
+            cleaned =
+            await _geminiService.polishHandwritingOCR(_messyController.text);
+          } else {
+            cleaned = await _geminiService.cleanNotes(_messyController.text);
+          }
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: _geminiService.lastEstimatedTokens, 
+            actionName: "Notes Cleaning"
+          );
 
-        if (mounted) {
-          setState(() {
-            _showSuccessAnimation = false;
-          });
+          if (mounted) {
+            setState(() {
+              _cleanedResult = cleaned;
+              _isProcessing = false;
+              _showSuccessAnimation = true;
+            });
+
+            await Future.delayed(const Duration(seconds: 2));
+
+            if (mounted) {
+              setState(() {
+                _showSuccessAnimation = false;
+              });
+            }
+          }
+        } catch (e) {
+          _showError('Cleaning failed: $e');
+          setState(() => _isProcessing = false);
         }
-      }
-    } catch (e) {
-      _showError('Cleaning failed: $e');
-      setState(() => _isProcessing = false);
-    }
+      },
+    );
   }
 
   Future<void> _saveToNotes() async {

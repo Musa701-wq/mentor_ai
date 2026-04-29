@@ -15,6 +15,8 @@ class HomeworkProvider extends ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   final _creditsService = CreditsService();
 
+  int get lastTokens => _geminiService.lastEstimatedTokens;
+
   String? extractedText;
   String? steps;
   bool loading = false;
@@ -36,12 +38,15 @@ class HomeworkProvider extends ChangeNotifier {
     notifyListeners();
     try {
       extractedText = await _ocrService.extractTextFromImage(image);
+      
+      // Proactive credit deduction (Now handled in UI via confirmAndDeductCredits)
+      // Final security check in Provider:
+      // if (!(await _creditsService.deductCredits(1.0))) throw Exception("Insufficient credits.");
+      // Removing to avoid double charging.
+
       steps = await _geminiService.chat(
         "Solve this homework question from the extracted text:\n$extractedText",
       );
-      // Dynamic credit deduction
-      final tokens = _geminiService.lastEstimatedTokens;
-      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
       return null; // Success
     } catch (e) {
@@ -58,12 +63,12 @@ class HomeworkProvider extends ChangeNotifier {
     notifyListeners();
     try {
       extractedText = await _ocrService.extractTextFromPdf(pdf);
+
+      // Proactive credit deduction (Handled in UI)
+
       steps = await _geminiService.chat(
         "Solve this homework question from the extracted PDF text:\n$extractedText",
       );
-      // Dynamic credit deduction
-      final tokens = _geminiService.lastEstimatedTokens;
-      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
       return null;
     } catch (e) {
@@ -80,12 +85,12 @@ class HomeworkProvider extends ChangeNotifier {
     notifyListeners();
     try {
       extractedText = await _ocrService.extractTextFromDocx(filePath);
+
+      // Proactive credit deduction (Handled in UI)
+
       steps = await _geminiService.chat(
         "Solve this homework question from the extracted document text:\n$extractedText",
       );
-      // Dynamic credit deduction
-      final tokens = _geminiService.lastEstimatedTokens;
-      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
       return null;
     } catch (e) {
@@ -102,12 +107,12 @@ class HomeworkProvider extends ChangeNotifier {
     notifyListeners();
     try {
       extractedText = text;
+
+      // Proactive credit deduction (Handled in UI)
+
       steps = await _geminiService.chat(
         "Solve this homework question:\n$text",
       );
-      // Dynamic credit deduction
-      final tokens = _geminiService.lastEstimatedTokens;
-      await _creditsService.deductCredits(CreditsService.calcCreditsFromTokens(tokens));
       _autoSave();
       return null;
     } catch (e) {

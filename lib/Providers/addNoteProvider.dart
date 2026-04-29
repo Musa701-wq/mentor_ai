@@ -23,6 +23,7 @@ class AddNoteProvider with ChangeNotifier {
   bool _summaryEnabled = false;
 
   bool get summaryEnabled => _summaryEnabled;
+  int get lastTokens => geminiService.lastEstimatedTokens;
 
 
 
@@ -127,10 +128,11 @@ class AddNoteProvider with ChangeNotifier {
       final s = await geminiService.summarize(content);
       summary = s;
       // Dynamic credit deduction based on token usage
-      final tokens = geminiService.lastEstimatedTokens;
-      final cost = CreditsService.calcCreditsFromTokens(tokens);
-      await _creditsService.deductCredits(cost);
-      debugPrint('💳 Summary: deducted $cost credits ($tokens tokens)');
+      await _creditsService.deductUsage(
+        tokens: geminiService.lastEstimatedTokens, 
+        actionName: "AI Summary Generation"
+      );
+      debugPrint('💳 Summary: deducted usage for ${geminiService.lastEstimatedTokens} tokens');
       setState(AddNoteState.confirming);
     } catch (e) {
       print(e);

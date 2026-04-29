@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../Providers/chatProvider.dart';
 import '../Screens/AuthWrapper.dart';
+import '../services/creditService.dart';
 
 class ChatBuddyScreen extends StatefulWidget {
   const ChatBuddyScreen({super.key});
@@ -85,13 +86,19 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
     super.dispose();
   }
 
-  void _sendMessage(ChatProvider provider) {
+  void _sendMessage(ChatProvider provider) async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
-    provider.sendMessage(text);
-    _controller.clear();
-    Future.delayed(const Duration(milliseconds: 250), () => _scrollToBottom());
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "AI Study Buddy Reply",
+      onConfirmedAction: () async {
+        provider.sendMessage(text);
+        _controller.clear();
+        Future.delayed(const Duration(milliseconds: 250), () => _scrollToBottom());
+      },
+    );
   }
 
   void _scrollToBottom({bool animated = true}) {
@@ -223,6 +230,42 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
           ),
         ),
       ],
+    );
+  }
+
+  /// Optional pre-set question suggestions
+  Widget _buildSuggestedQuestions(ChatProvider chatProvider) {
+    if (chatProvider.messages.isNotEmpty) return const SizedBox.shrink();
+
+    final suggestions = [
+      "Summarize my topic",
+      "Explain a complex concept",
+      "Create a quick quiz",
+      "Give me study tips"
+    ];
+
+    return Container(
+      height: 40,
+      margin: const EdgeInsets.symmetric(vertical: 12),
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        scrollDirection: Axis.horizontal,
+        itemCount: suggestions.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          return ActionChip(
+            label: Text(suggestions[index], style: const TextStyle(fontSize: 13, color: Color(0xFF5E35B1), fontWeight: FontWeight.w600)),
+            backgroundColor: Colors.deepPurple.shade50,
+            side: BorderSide.none,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            onPressed: () {
+              _controller.text = suggestions[index];
+              _sendMessage(chatProvider);
+            },
+          );
+        },
+      ),
     );
   }
 
@@ -440,6 +483,7 @@ class _ChatBuddyScreenState extends State<ChatBuddyScreen>
                     },
                   ),
                 ),
+                _buildSuggestedQuestions(chatProvider),
                 _buildInputBar(chatProvider),
               ],
             ),

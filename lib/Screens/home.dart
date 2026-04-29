@@ -36,6 +36,8 @@ import 'flashcards/FlashcardHubScreen.dart';
 import 'flashcards/FlashcardGeneratorScreen.dart';
 import 'eli5/ELI5Screen.dart';
 import 'infographic/InfographicHubScreen.dart';
+import 'dependency_graph/dependency_graph_screen.dart';
+import 'dependency_graph/dependency_graph_hub_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -1537,6 +1539,27 @@ class HomeBody extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Expanded(
+              child: _buildEli5MiniCard(
+                title: 'Dependency Graph',
+                subtitle: 'Chronological topics',
+                icon: Icons.account_tree_rounded,
+                colors: [const Color(0xFF2196F3), const Color(0xFF03A9F4)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DependencyGraphHubScreen()),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: const SizedBox()),
+          ],
+        ),
       ],
     );
   }
@@ -1579,21 +1602,25 @@ class HomeBody extends StatelessWidget {
               ),
               child: Icon(icon, color: Colors.white, size: 24),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 15,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),
-                fontSize: 12,
+                fontSize: 11,
               ),
             ),
           ],
@@ -1716,6 +1743,19 @@ class HomeBody extends StatelessWidget {
                   AdService.showInterstitialAndNavigate(
                     context,
                     MindmapScreen(),
+                  );
+                },
+                context: context,
+              ),
+              _buildActionCard(
+                title: 'Dependency Graph',
+                icon: Icons.account_tree_rounded,
+                subtitle: 'Topic prerequisites',
+                colors: const [Color(0xFF2196F3), Color(0xFF03A9F4)],
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const DependencyGraphHubScreen()),
                   );
                 },
                 context: context,

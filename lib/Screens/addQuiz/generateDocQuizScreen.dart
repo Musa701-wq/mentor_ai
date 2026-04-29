@@ -116,43 +116,63 @@ class _GenerateDocQuizScreenState extends State<GenerateDocQuizScreen> with Sing
       return;
     }
 
-    // ─── Temporarily bypassed for testing ───────────────
-    try {
-      quizProvider.setQuizTitle(quizTitle);
-      await quizProvider.generateFromNotes(extractedText, title: quizTitle);
-      await quizProvider.saveQuizToDb(user.uid, isAiGenerated: true);
-
-      if (mounted) {
-        setState(() {
-          _showSuccessAnimation = true;
-        });
-
-        await Future.delayed(const Duration(seconds: 2));
-
-        if (mounted) {
-          setState(() {
-            _showSuccessAnimation = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Quiz generated & saved! (Bypassed Credits) 🎉",
-              ),
-              backgroundColor: Colors.green[600],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
+    // ✅ Standardized Credit Deduction Flow
+    await CreditsService.confirmUsageAndCheckBalance(
+      context: context,
+      actionName: "Quiz Generation (Document)",
+      onConfirmedAction: () async {
+        try {
+          quizProvider.setQuizTitle(quizTitle);
+          final error = await quizProvider.generateFromNotes(extractedText, title: quizTitle);
+          if (error != null) {
+            if (error.contains("Insufficient")) return;
+            throw Exception(error);
+          }
+          
+          // Usage deduction
+          await CreditsService().deductUsage(
+            tokens: quizProvider.lastTokens, 
+            actionName: "Quiz Generation (Document)"
           );
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const HomeScreen(initialIndex: 2)),
-            (route) => false,
-          );
+
+          await quizProvider.saveQuizToDb(user.uid, isAiGenerated: true);
+
+          if (mounted) {
+            setState(() {
+              _showSuccessAnimation = true;
+            });
+
+            await Future.delayed(const Duration(seconds: 2));
+
+            if (mounted) {
+              setState(() {
+                _showSuccessAnimation = false;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text("Quiz generated & saved! 🎉"),
+                  backgroundColor: Colors.green[600],
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomeScreen(initialIndex: 2)),
+                (route) => false,
+              );
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            _showSnackBar("Error generating quiz: $e");
+          }
         }
-      }
-    } catch (e) {
-      _showSnackBar("Error generating quiz: $e");
-    }
+      },
+      onCancel: () {
+        // Just return
+      },
+    );
   }
 
   void _showSnackBar(String msg) {

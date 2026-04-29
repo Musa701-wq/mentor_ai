@@ -26,12 +26,14 @@ class _HomeworkHelperScreenState extends State<HomeworkHelperScreen> {
     if (pickedFile != null) {
       final file = File(pickedFile.path);
 
-      await CreditsService.confirmAndDeductCredits(
+      await CreditsService.confirmUsageAndCheckBalance(
         context: context,
-        cost: CreditsConfig.aiHomeworkHelper,
         actionName: "Homework Solving",
         onConfirmedAction: () async {
           final error = await provider.extractAndSolveFromImage(file);
+          if (error == null) {
+            await CreditsService().deductUsage(tokens: provider.lastTokens, actionName: "Homework Solving");
+          }
           _handleResult(error);
         },
       );
@@ -47,9 +49,8 @@ class _HomeworkHelperScreenState extends State<HomeworkHelperScreen> {
       final file = File(result.files.single.path!);
       final ext = result.files.single.extension?.toLowerCase();
 
-      await CreditsService.confirmAndDeductCredits(
+      await CreditsService.confirmUsageAndCheckBalance(
         context: context,
-        cost: CreditsConfig.aiHomeworkHelper,
         actionName: "Homework Solving",
         onConfirmedAction: () async {
           String? error;
@@ -57,6 +58,9 @@ class _HomeworkHelperScreenState extends State<HomeworkHelperScreen> {
             error = await provider.extractAndSolveFromPdf(file);
           } else if (ext == "docx") {
             error = await provider.extractAndSolveFromDocx(file.path);
+          }
+          if (error == null) {
+            await CreditsService().deductUsage(tokens: provider.lastTokens, actionName: "Homework Solving");
           }
           _handleResult(error);
         },
@@ -67,12 +71,14 @@ class _HomeworkHelperScreenState extends State<HomeworkHelperScreen> {
   Future<void> _solveFromText(HomeworkProvider provider) async {
     if (_textController.text.trim().isEmpty) return;
 
-    await CreditsService.confirmAndDeductCredits(
+    await CreditsService.confirmUsageAndCheckBalance(
       context: context,
-      cost: CreditsConfig.aiHomeworkHelper,
       actionName: "Homework Solving",
       onConfirmedAction: () async {
         final error = await provider.solveFromText(_textController.text.trim());
+        if (error == null) {
+          await CreditsService().deductUsage(tokens: provider.lastTokens, actionName: "Homework Solving");
+        }
         _handleResult(error);
         _textFocusNode.unfocus();
       },
